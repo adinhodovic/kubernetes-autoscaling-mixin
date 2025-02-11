@@ -48,13 +48,29 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       ) +
       datasource.generalOptions.withLabel('Data source'),
 
+    local clusterVariable =
+      query.new(
+        $._config.clusterLabel,
+        'label_values(kube_pod_info{%(kubeStateMetricsSelector)s}, cluster)' % $._config,
+      ) +
+      query.withDatasourceFromVariable(datasourceVariable) +
+      query.withSort() +
+      query.generalOptions.withLabel('Cluster') +
+      query.refresh.onLoad() +
+      query.refresh.onTime() +
+      (
+        if $._config.showMultiCluster
+        then query.generalOptions.showOnDashboard.withLabelAndValue()
+        else query.generalOptions.showOnDashboard.withNothing()
+      ),
+
     local jobVariable =
       query.new(
         'job',
-        'label_values(karpenter_nodes_allocatable{}, job)'
+        'label_values(karpenter_nodes_allocatable{%(clusterLabel)s="$cluster"}, job)' % $._config,
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
-      query.withSort(1) +
+      query.withSort() +
       query.generalOptions.withLabel('Job') +
       query.refresh.onLoad() +
       query.refresh.onTime(),
@@ -62,10 +78,10 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local regionVariable =
       query.new(
         'region',
-        'label_values(karpenter_nodes_allocatable{job=~"$job"}, region)'
+        'label_values(karpenter_nodes_allocatable{%(clusterLabel)s="$cluster", job=~"$job"}, region)' % $._config,
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
-      query.withSort(1) +
+      query.withSort() +
       query.generalOptions.withLabel('Region') +
       query.selectionOptions.withMulti(true) +
       query.selectionOptions.withIncludeAll(true) +
@@ -75,10 +91,10 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local zoneVariable =
       query.new(
         'zone',
-        'label_values(karpenter_nodes_allocatable{job=~"$job", region=~"$region"}, zone)'
+        'label_values(karpenter_nodes_allocatable{%(clusterLabel)s="$cluster", job=~"$job", region=~"$region"}, zone)' % $._config,
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
-      query.withSort(1) +
+      query.withSort() +
       query.generalOptions.withLabel('Zone') +
       query.selectionOptions.withMulti(true) +
       query.selectionOptions.withIncludeAll(true) +
@@ -88,10 +104,10 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local archVariable =
       query.new(
         'arch',
-        'label_values(karpenter_nodes_allocatable{job=~"$job", region=~"$region", zone=~"$zone"}, arch)'
+        'label_values(karpenter_nodes_allocatable{%(clusterLabel)s="$cluster", job=~"$job", region=~"$region", zone=~"$zone"}, arch)' % $._config,
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
-      query.withSort(1) +
+      query.withSort() +
       query.generalOptions.withLabel('Architecture') +
       query.selectionOptions.withMulti(true) +
       query.selectionOptions.withIncludeAll(true) +
@@ -101,7 +117,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local osVariable =
       query.new(
         'os',
-        'label_values(karpenter_nodes_allocatable{job=~"$job", region=~"$region", zone=~"$zone", arch=~"$arch"}, os)'
+        'label_values(karpenter_nodes_allocatable{%(clusterLabel)s="$cluster", job=~"$job", region=~"$region", zone=~"$zone", arch=~"$arch"}, os)' % $._config
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -114,7 +130,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local instanceTypeVariable =
       query.new(
         'instance_type',
-        'label_values(karpenter_nodes_allocatable{job=~"$job", region=~"$region", zone=~"$zone", arch=~"$arch", os=~"$os"}, instance_type)'
+        'label_values(karpenter_nodes_allocatable{%(clusterLabel)s="$cluster", job=~"$job", region=~"$region", zone=~"$zone", arch=~"$arch", os=~"$os"}, instance_type)' % $._config
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -127,7 +143,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local capacityTypeVariable =
       query.new(
         'capacity_type',
-        'label_values(karpenter_nodes_allocatable{job=~"$job", region=~"$region", zone=~"$zone", arch=~"$arch", os=~"$os", instance_type=~"$instance_type"}, capacity_type)'
+        'label_values(karpenter_nodes_allocatable{%(clusterLabel)s="$cluster", job=~"$job", region=~"$region", zone=~"$zone", arch=~"$arch", os=~"$os", instance_type=~"$instance_type"}, capacity_type)' % $._config
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -140,7 +156,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local nodePoolVariable =
       query.new(
         'nodepool',
-        'label_values(karpenter_nodes_allocatable{job=~"$job", region=~"$region", zone=~"$zone", arch=~"$arch", os=~"$os", instance_type=~"$instance_type", capacity_type=~"$capacity_type"}, nodepool)'
+        'label_values(karpenter_nodes_allocatable{%(clusterLabel)s="$cluster", job=~"$job", region=~"$region", zone=~"$zone", arch=~"$arch", os=~"$os", instance_type=~"$instance_type", capacity_type=~"$capacity_type"}, nodepool)' % $._config
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -152,6 +168,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
 
     local variables = [
       datasourceVariable,
+      clusterVariable,
       jobVariable,
       regionVariable,
       zoneVariable,
@@ -165,12 +182,13 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local karpenterClusterCpuAllocatableQuery = |||
       sum(
         karpenter_nodepools_usage{
+          %(clusterLabel)s="$cluster",
           job=~"$job",
           nodepool=~"$nodepool",
           resource_type="cpu"
         }
       )
-    |||,
+    ||| % $._config,
 
     local karpenterClusterCpuUtilizationTimeSeriesPanel =
       timeSeriesPanel.new(
@@ -243,6 +261,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local karpenterNodePoolsUtilizationByNodePoolQuery = |||
       sum(
         karpenter_nodepools_usage{
+          %(clusterLabel)s="$cluster",
           job=~"$job",
           nodepool=~"$nodepool",
         }
@@ -250,11 +269,12 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       /
       sum(
         karpenter_nodepools_limit{
+          %(clusterLabel)s="$cluster",
           job=~"$job",
           nodepool=~"$nodepool",
         }
       ) by (nodepool, resource_type) * 100
-    |||,
+    ||| % $._config,
 
     local karpenterNodePoolsUtilizationTimeSeriesPanel =
       timeSeriesPanel.new(
@@ -286,11 +306,12 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       count(
         count(
           karpenter_nodepools_allowed_disruptions{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
           }
         ) by (nodepool)
       )
-    |||,
+    ||| % $._config,
 
     local karpenterNodePoolsStatPanel =
       statPanel.new(
@@ -315,6 +336,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       count(
         count(
           karpenter_nodes_allocatable{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             region=~"$region",
             zone=~"$zone",
@@ -326,7 +348,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
           }
         ) by (node_name)
       )
-    |||,
+    ||| % $._config,
 
     local karpenterNodesCountStatPanel =
       statPanel.new(
@@ -350,12 +372,13 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local karpenterNodePoolCpuUsageQuery = |||
       sum(
         karpenter_nodepools_usage{
+          %(clusterLabel)s="$cluster",
           job=~"$job",
           nodepool=~"$nodepool",
           resource_type="cpu"
         }
       )
-    |||,
+    ||| % $._config,
 
     local karpenterNodePoolCpuUsageStatPanel =
       statPanel.new(
@@ -443,6 +466,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       count by (nodepool) (
         count by (node_name, nodepool) (
           karpenter_nodes_allocatable{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             region=~"$region",
             zone=~"$zone",
@@ -454,7 +478,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local karpenterNodesByNodePoolPieChartPanel =
       pieChartPanel.new(
@@ -479,6 +503,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       count by (instance_type) (
         count by (node_name, instance_type) (
           karpenter_nodes_allocatable{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             region=~"$region",
             zone=~"$zone",
@@ -490,7 +515,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local karpenterNodesByInstanceTypePieChartPanel =
       pieChartPanel.new(
@@ -515,6 +540,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       count by (capacity_type) (
         count by (node_name, capacity_type) (
           karpenter_nodes_allocatable{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             region=~"$region",
             zone=~"$zone",
@@ -526,7 +552,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local karpenterNodesByCapacityTypePieChartPanel =
       pieChartPanel.new(
@@ -551,6 +577,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       count by (region) (
         count by (node_name, region) (
           karpenter_nodes_allocatable{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             region=~"$region",
             zone=~"$zone",
@@ -562,7 +589,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local karpenterNodesByRegionPieChartPanel =
       pieChartPanel.new(
@@ -587,6 +614,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       count by (zone) (
         count by (node_name, zone) (
           karpenter_nodes_allocatable{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             nodepool=~"$nodepool",
             zone=~"$zone",
@@ -598,7 +626,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local karpenterNodesByZonePieChartPanel =
       pieChartPanel.new(
@@ -623,6 +651,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       count by (arch) (
         count by (node_name, arch) (
           karpenter_nodes_allocatable{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             nodepool=~"$nodepool",
             zone=~"$zone",
@@ -634,7 +663,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local karpenterNodesByArchPieChartPanel =
       pieChartPanel.new(
@@ -659,6 +688,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       count by (os) (
         count by (node_name, os) (
           karpenter_nodes_allocatable{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             region=~"$region",
             zone=~"$zone",
@@ -670,7 +700,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local karpenterNodesByOSPieChartPanel =
       pieChartPanel.new(
@@ -695,6 +725,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local karpenterPodCpuRequestsQuery = |||
       sum(
         karpenter_nodes_total_pod_requests{
+          %(clusterLabel)s="$cluster",
           job=~"$job",
           resource_type="cpu",
           region=~"$region",
@@ -708,6 +739,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       ) +
       sum(
         karpenter_nodes_total_daemon_requests{
+          %(clusterLabel)s="$cluster",
           job=~"$job",
           resource_type="cpu",
           region=~"$region",
@@ -719,7 +751,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
           nodepool=~"$nodepool"
         }
       )
-    |||,
+    ||| % $._config,
 
     local karpenterPodCpuRequestsStatPanel =
       statPanel.new(
@@ -806,11 +838,12 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local karpenterPodsByNodePoolQuery = |||
       sum(
           karpenter_pods_state{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             nodepool=~"$nodepool"
           }
       ) by (nodepool)
-    |||,
+    ||| % $._config,
 
     local karpenterPodsByNodePoolPieChartPanel =
       pieChartPanel.new(
@@ -876,12 +909,14 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local karpenterTCpuNodePoolUsageQuery = |||
       sum(
         karpenter_nodepools_usage{
+          %(clusterLabel)s="$cluster",
           job=~"$job",
           nodepool=~"$nodepool",
           resource_type="cpu"
         }
       ) by (job, namespace, nodepool)
-    |||,
+    ||| % $._config,
+
     local karpenterTMemoryNodePoolUsageQuery = std.strReplace(karpenterTCpuNodePoolUsageQuery, 'cpu', 'memory'),
     local karpenterTNodesByNodePoolUsageQuery = std.strReplace(karpenterTCpuNodePoolUsageQuery, 'cpu', 'nodes'),
     local karpenterTPodsByNodePoolUsageQuery = std.strReplace(karpenterTCpuNodePoolUsageQuery, 'cpu', 'pods'),
@@ -1072,6 +1107,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         (
           sum(
             karpenter_nodes_total_pod_requests{
+              %(clusterLabel)s="$cluster",
               job=~"$job",
               resource_type="cpu",
               region=~"$region",
@@ -1082,10 +1118,11 @@ local pieQueryOptions = pieChartPanel.queryOptions;
               capacity_type=~"$capacity_type",
               nodepool=~"$nodepool"
             }
-          ) by (%s)
+          ) by (%(inclusionListStr)s)
           +
           sum(
             karpenter_nodes_total_daemon_requests{
+              %(clusterLabel)s="$cluster",
               job=~"$job",
               resource_type="cpu",
               region=~"$region",
@@ -1096,10 +1133,11 @@ local pieQueryOptions = pieChartPanel.queryOptions;
               capacity_type=~"$capacity_type",
               nodepool=~"$nodepool"
             }
-          ) by (%s)
+          ) by (%(inclusionListStr)s)
         ) /
         sum(
           karpenter_nodes_allocatable{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             resource_type="cpu",
             region=~"$region",
@@ -1110,9 +1148,9 @@ local pieQueryOptions = pieChartPanel.queryOptions;
             capacity_type=~"$capacity_type",
             nodepool=~"$nodepool"
           }
-        ) by (%s)
+        ) by (%(inclusionListStr)s)
       ) * 100
-    ||| % [inclusionListStr, inclusionListStr, inclusionListStr],
+    ||| % ($._config { inclusionListStr: inclusionListStr }),
 
     local karpenterTNodeMemoryUtilizationQuery = std.strReplace(karpenterTNodeCpuUtilizationQuery, 'cpu', 'memory'),
 

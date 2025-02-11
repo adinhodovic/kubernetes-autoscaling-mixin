@@ -44,10 +44,26 @@ local tbOverride = tbStandardOptions.override;
       ) +
       datasource.generalOptions.withLabel('Data source'),
 
+    local clusterVariable =
+      query.new(
+        $._config.clusterLabel,
+        'label_values(kube_pod_info{%(kubeStateMetricsSelector)s}, cluster)' % $._config,
+      ) +
+      query.withDatasourceFromVariable(datasourceVariable) +
+      query.withSort() +
+      query.generalOptions.withLabel('Cluster') +
+      query.refresh.onLoad() +
+      query.refresh.onTime() +
+      (
+        if $._config.showMultiCluster
+        then query.generalOptions.showOnDashboard.withLabelAndValue()
+        else query.generalOptions.showOnDashboard.withNothing()
+      ),
+
     local jobVariable =
       query.new(
         'job',
-        'label_values(kube_poddisruptionbudget_status_current_healthy{}, job)'
+        'label_values(kube_poddisruptionbudget_status_current_healthy{%(clusterLabel)s="$cluster"}, job)' % $._config,
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -58,7 +74,7 @@ local tbOverride = tbStandardOptions.override;
     local namespaceVariable =
       query.new(
         'namespace',
-        'label_values(kube_poddisruptionbudget_status_current_healthy{job=~"$job"}, namespace)'
+        'label_values(kube_poddisruptionbudget_status_current_healthy{%(clusterLabel)s="$cluster", job=~"$job"}, namespace)' % $._config,
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -70,7 +86,7 @@ local tbOverride = tbStandardOptions.override;
     local pdbVariable =
       query.new(
         'pdb',
-        'label_values(kube_poddisruptionbudget_status_current_healthy{job=~"$job", namespace=~"$namespace"}, poddisruptionbudget)'
+        'label_values(kube_poddisruptionbudget_status_current_healthy{%(clusterLabel)s="$cluster", job=~"$job", namespace=~"$namespace"}, poddisruptionbudget)' % $._config,
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -80,6 +96,7 @@ local tbOverride = tbStandardOptions.override;
 
     local variables = [
       datasourceVariable,
+      clusterVariable,
       jobVariable,
       namespaceVariable,
       pdbVariable,
@@ -89,13 +106,14 @@ local tbOverride = tbStandardOptions.override;
       round(
         sum(
           kube_poddisruptionbudget_status_pod_disruptions_allowed{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             namespace=~"$namespace",
             poddisruptionbudget=~"$pdb"
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local pdbDisruptionsAllowedStatPanel =
       statPanel.new(
@@ -120,13 +138,14 @@ local tbOverride = tbStandardOptions.override;
       round(
         sum(
           kube_poddisruptionbudget_status_desired_healthy{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             namespace=~"$namespace",
             poddisruptionbudget=~"$pdb"
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local pdbDesiredHealthyStatPanel =
       statPanel.new(
@@ -151,13 +170,14 @@ local tbOverride = tbStandardOptions.override;
       round(
         sum(
           kube_poddisruptionbudget_status_current_healthy{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             namespace=~"$namespace",
             poddisruptionbudget=~"$pdb"
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local pdbCurrentlyHealthyStatPanel =
       statPanel.new(
@@ -182,13 +202,14 @@ local tbOverride = tbStandardOptions.override;
       round(
         sum(
           kube_poddisruptionbudget_status_expected_pods{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             namespace=~"$namespace",
             poddisruptionbudget=~"$pdb"
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local pdbExpectedPodsStatPanel =
       statPanel.new(
@@ -282,12 +303,13 @@ local tbOverride = tbStandardOptions.override;
       round(
         sum(
           kube_poddisruptionbudget_status_pod_disruptions_allowed{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             namespace=~"$namespace"
           }
         ) by (job, namespace, poddisruptionbudget)
       )
-    |||,
+    ||| % $._config,
     local pdbDesiredHealthyNamespaceQuery = std.strReplace(pdbDisruptionsAllowedNamespaceQuery, 'pod_disruptions_allowed', 'desired_healthy'),
     local pdbCurrentlyHealthyNamespaceQuery = std.strReplace(pdbDisruptionsAllowedNamespaceQuery, 'pod_disruptions_allowed', 'current_healthy'),
     local pdbExpectedPodsNamespaceQuery = std.strReplace(pdbDisruptionsAllowedNamespaceQuery, 'pod_disruptions_allowed', 'expected_pods'),

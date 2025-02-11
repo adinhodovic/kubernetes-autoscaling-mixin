@@ -10,7 +10,11 @@ local annotation = g.dashboard.annotation;
       __requires: [],
     },
 
-    kubernetesStateMetricsSelector: 'job=~"kube-state-metrics"',
+    // Opt-in to multiCluster dashboards by overriding this and the clusterLabel.
+    showMultiCluster: false,
+    clusterLabel: 'cluster',
+
+    kubeStateMetricsSelector: 'job=~"kube-state-metrics"',
 
     grafanaUrl: 'https://grafana.com',
 

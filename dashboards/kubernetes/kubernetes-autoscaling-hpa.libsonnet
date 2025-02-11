@@ -41,10 +41,26 @@ local tbQueryOptions = tablePanel.queryOptions;
       ) +
       datasource.generalOptions.withLabel('Data source'),
 
+    local clusterVariable =
+      query.new(
+        $._config.clusterLabel,
+        'label_values(kube_pod_info{%(kubeStateMetricsSelector)s}, cluster)' % $._config,
+      ) +
+      query.withDatasourceFromVariable(datasourceVariable) +
+      query.withSort() +
+      query.generalOptions.withLabel('Cluster') +
+      query.refresh.onLoad() +
+      query.refresh.onTime() +
+      (
+        if $._config.showMultiCluster
+        then query.generalOptions.showOnDashboard.withLabelAndValue()
+        else query.generalOptions.showOnDashboard.withNothing()
+      ),
+
     local jobVariable =
       query.new(
         'job',
-        'label_values(kube_horizontalpodautoscaler_metadata_generation{}, job)'
+        'label_values(kube_horizontalpodautoscaler_metadata_generation{%(clusterLabel)s="$cluster"}, job)' % $._config
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -55,7 +71,7 @@ local tbQueryOptions = tablePanel.queryOptions;
     local namespaceVariable =
       query.new(
         'namespace',
-        'label_values(kube_horizontalpodautoscaler_metadata_generation{job=~"$job"}, namespace)'
+        'label_values(kube_horizontalpodautoscaler_metadata_generation{%(clusterLabel)s="$cluster", job=~"$job"}, namespace)' % $._config
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -67,7 +83,7 @@ local tbQueryOptions = tablePanel.queryOptions;
     local hpaVariable =
       query.new(
         'hpa',
-        'label_values(kube_horizontalpodautoscaler_spec_target_metric{job=~"$job", namespace="$namespace"},horizontalpodautoscaler)'
+        'label_values(kube_horizontalpodautoscaler_spec_target_metric{%(clusterLabel)s="$cluster", job=~"$job", namespace="$namespace"},horizontalpodautoscaler)' % $._config
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -78,7 +94,7 @@ local tbQueryOptions = tablePanel.queryOptions;
     local metricNameVariable =
       query.new(
         'metric_name',
-        'label_values(kube_horizontalpodautoscaler_spec_target_metric{job=~"$job", namespace="$namespace", horizontalpodautoscaler="$hpa"}, metric_name)'
+        'label_values(kube_horizontalpodautoscaler_spec_target_metric{%(clusterLabel)s="$cluster", job=~"$job", namespace="$namespace", horizontalpodautoscaler="$hpa"}, metric_name)' % $._config
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -90,6 +106,7 @@ local tbQueryOptions = tablePanel.queryOptions;
 
     local variables = [
       datasourceVariable,
+      clusterVariable,
       jobVariable,
       namespaceVariable,
       hpaVariable,
@@ -100,13 +117,14 @@ local tbQueryOptions = tablePanel.queryOptions;
       round(
         sum(
           kube_horizontalpodautoscaler_status_desired_replicas{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             namespace=~"$namespace",
             horizontalpodautoscaler="$hpa"
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local hpaDesiredReplicasStatPanel =
       statPanel.new(
@@ -131,13 +149,14 @@ local tbQueryOptions = tablePanel.queryOptions;
       round(
         sum(
           kube_horizontalpodautoscaler_status_current_replicas{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             namespace=~"$namespace",
             horizontalpodautoscaler="$hpa"
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local hpaCurrentReplicasStatPanel =
       statPanel.new(
@@ -162,13 +181,14 @@ local tbQueryOptions = tablePanel.queryOptions;
       round(
         sum(
           kube_horizontalpodautoscaler_spec_min_replicas{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             namespace=~"$namespace",
             horizontalpodautoscaler="$hpa"
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local hpaMinReplicasStatPanel =
       statPanel.new(
@@ -193,13 +213,14 @@ local tbQueryOptions = tablePanel.queryOptions;
       round(
         sum(
           kube_horizontalpodautoscaler_spec_max_replicas{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             namespace=~"$namespace",
             horizontalpodautoscaler="$hpa"
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local hpaMaxReplicasStatPanel =
       statPanel.new(
@@ -224,6 +245,7 @@ local tbQueryOptions = tablePanel.queryOptions;
       round(
         sum(
           kube_horizontalpodautoscaler_spec_target_metric{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             namespace=~"$namespace",
             horizontalpodautoscaler="$hpa",
@@ -231,7 +253,7 @@ local tbQueryOptions = tablePanel.queryOptions;
           }
         ) by (job, namespace, horizontalpodautoscaler, metric_name, metric_target_type)
       )
-    |||,
+    ||| % $._config,
 
     local hpaMetricTargetsTable =
       tablePanel.new(
@@ -286,6 +308,7 @@ local tbQueryOptions = tablePanel.queryOptions;
       round(
         sum(
           kube_horizontalpodautoscaler_spec_target_metric{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             namespace=~"$namespace",
             horizontalpodautoscaler="$hpa",
@@ -294,7 +317,7 @@ local tbQueryOptions = tablePanel.queryOptions;
           }
         ) by (job, namespace, horizontalpodautoscaler, metric_name, metric_target_type)
       )
-    |||,
+    ||| % $._config,
     local hpaUtilizationQuery = std.strReplace(hpaThresholdQuery, 'spec_target_metric', 'status_target_metric'),
 
     local hpaUsageThresholdTimeSeriesPanel =

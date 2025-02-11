@@ -41,10 +41,26 @@ local tsLegend = tsOptions.legend;
       ) +
       datasource.generalOptions.withLabel('Data source'),
 
+    local clusterVariable =
+      query.new(
+        $._config.clusterLabel,
+        'label_values(kube_pod_info{%(kubeStateMetricsSelector)s}, cluster)' % $._config,
+      ) +
+      query.withDatasourceFromVariable(datasourceVariable) +
+      query.withSort() +
+      query.generalOptions.withLabel('Cluster') +
+      query.refresh.onLoad() +
+      query.refresh.onTime() +
+      (
+        if $._config.showMultiCluster
+        then query.generalOptions.showOnDashboard.withLabelAndValue()
+        else query.generalOptions.showOnDashboard.withNothing()
+      ),
+
     local jobVariable =
       query.new(
         'job',
-        'label_values(cluster_autoscaler_last_activity{}, job)'
+        'label_values(cluster_autoscaler_last_activity{%(clusterLabel)s="$cluster"}, job)' % $._config,
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -55,6 +71,7 @@ local tsLegend = tsOptions.legend;
 
     local variables = [
       datasourceVariable,
+      clusterVariable,
       jobVariable,
     ],
 
@@ -62,11 +79,12 @@ local tsLegend = tsOptions.legend;
       round(
         sum(
           cluster_autoscaler_nodes_count{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local caTotalNodesStatPanel =
       statPanel.new(
@@ -91,11 +109,12 @@ local tsLegend = tsOptions.legend;
       round(
         sum(
           cluster_autoscaler_max_nodes_count{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local caMaxNodesStatPanel =
       statPanel.new(
@@ -120,11 +139,12 @@ local tsLegend = tsOptions.legend;
       round(
         sum(
           cluster_autoscaler_node_groups_count{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local caNodeGroupsStatPanel =
       statPanel.new(
@@ -149,17 +169,19 @@ local tsLegend = tsOptions.legend;
       round(
         sum(
           cluster_autoscaler_nodes_count{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             state="ready"
           }
         ) /
         sum(
           cluster_autoscaler_nodes_count{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           }
         ) * 100
       )
-    |||,
+    ||| % $._config,
 
     local caHealthyNodesStatPanel =
       gaugePanel.new(
@@ -184,11 +206,12 @@ local tsLegend = tsOptions.legend;
       round(
         sum(
           cluster_autoscaler_cluster_safe_to_autoscale{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local caSafeToScaleStatPanel =
       statPanel.new(
@@ -222,11 +245,12 @@ local tsLegend = tsOptions.legend;
       round(
         sum(
           cluster_autoscaler_unschedulable_pods_count{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local caNumberUnscheduledPodsStatPanel =
       statPanel.new(
@@ -244,11 +268,12 @@ local tsLegend = tsOptions.legend;
     local caLastScaleDownQuery = |||
       time() - sum(
         cluster_autoscaler_last_activity{
+          %(clusterLabel)s="$cluster",
           job=~"$job",
           activity="scaleDown"
         }
       )
-    |||,
+    ||| % $._config,
 
     local caLastScaleDownStatPanel =
       statPanel.new(
@@ -270,11 +295,12 @@ local tsLegend = tsOptions.legend;
     local caLastScaleUpQuery = |||
       time() - sum(
         cluster_autoscaler_last_activity{
+          %(clusterLabel)s="$cluster",
           job=~"$job",
           activity="scaleUp"
         }
       )
-    |||,
+    ||| % $._config,
 
     local caLastScaleUpStatPanel =
       statPanel.new(
@@ -298,24 +324,26 @@ local tsLegend = tsOptions.legend;
         sum(
           increase(
             cluster_autoscaler_unschedulable_pods_count{
+              %(clusterLabel)s="$cluster",
               job=~"$job"
             }[2m]
           )
         ) by (type)
       )
-    |||,
+    ||| % $._config,
 
     local caEvicedPodsQuery = |||
       round(
         sum(
           increase(
             cluster_autoscaler_evicted_pods_total{
+              %(clusterLabel)s="$cluster",
               job=~"$job"
             }[2m]
           )
         )
       )
-    |||,
+    ||| % $._config,
 
     local caPodActivityTimeSeriesPanel =
       timeSeriesPanel.new(
@@ -350,11 +378,12 @@ local tsLegend = tsOptions.legend;
       round(
         sum(
           cluster_autoscaler_nodes_count{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           }
         ) by (state)
       )
-    |||,
+    ||| % $._config,
 
     local caNodeActivityTimeSeriesPanel =
       timeSeriesPanel.new(
@@ -382,23 +411,25 @@ local tsLegend = tsOptions.legend;
       round(
         sum(
           cluster_autoscaler_unneeded_nodes_count{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           }
         )
       )
-    |||,
+    ||| % $._config,
 
     local caScaledUpNodesQuery = |||
       round(
         sum(
           increase(
             cluster_autoscaler_scaled_up_nodes_total{
+              %(clusterLabel)s="$cluster",
               job=~"$job"
             }[2m]
           )
         )
       )
-    |||,
+    ||| % $._config,
 
     local caScaledDownNodesQuery = std.strReplace(caScaledUpNodesQuery, 'scaled_up', 'scaled_down'),
 

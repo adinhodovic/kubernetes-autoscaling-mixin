@@ -35,10 +35,26 @@ local tsLegend = tsOptions.legend;
       ) +
       datasource.generalOptions.withLabel('Data source'),
 
+    local clusterVariable =
+      query.new(
+        $._config.clusterLabel,
+        'label_values(kube_pod_info{%(kubeStateMetricsSelector)s}, cluster)' % $._config,
+      ) +
+      query.withDatasourceFromVariable(datasourceVariable) +
+      query.withSort() +
+      query.generalOptions.withLabel('Cluster') +
+      query.refresh.onLoad() +
+      query.refresh.onTime() +
+      (
+        if $._config.showMultiCluster
+        then query.generalOptions.showOnDashboard.withLabelAndValue()
+        else query.generalOptions.showOnDashboard.withNothing()
+      ),
+
     local jobVariable =
       query.new(
         'job',
-        'label_values(karpenter_nodes_allocatable{}, job)'
+        'label_values(karpenter_nodes_allocatable{%(clusterLabel)s="$cluster"}, job)' % $._config,
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -48,16 +64,18 @@ local tsLegend = tsOptions.legend;
 
     local variables = [
       datasourceVariable,
+      clusterVariable,
       jobVariable,
     ],
 
     local karpenterClusterStateSyncedQuery = |||
       sum(
         karpenter_cluster_state_synced{
+          %(clusterLabel)s="$cluster",
           job=~"$job",
         }
       ) by (job)
-    |||,
+    ||| % $._config,
 
     local karpenterClusterStateSyncedStatPanel =
       statPanel.new(
@@ -91,10 +109,11 @@ local tsLegend = tsOptions.legend;
     local karpenterClusterStateNodeCountQuery = |||
       sum(
         karpenter_cluster_state_node_count{
+          %(clusterLabel)s="$cluster",
           job=~"$job",
         }
       ) by (job)
-    |||,
+    ||| % $._config,
 
     local karpenterClusterStateNodeCountStatPanel =
       statPanel.new(
@@ -120,12 +139,13 @@ local tsLegend = tsOptions.legend;
         sum(
           increase(
             karpenter_cloudprovider_errors_total{
+              %(clusterLabel)s="$cluster",
               job=~"$job"
             }[$__rate_interval]
           )
         ) by (job, provider, controller, method)
       )
-    |||,
+    ||| % $._config,
 
     local karpenterCloudProviderErrorsTimeSeriesPanel =
       timeSeriesPanel.new(
@@ -157,22 +177,24 @@ local tsLegend = tsOptions.legend;
     local karpenterNodeTerminationP50DurationQuery = |||
       max(
         karpenter_nodes_termination_duration_seconds{
+          %(clusterLabel)s="$cluster",
           job=~"$job",
           quantile="0.5"
         }
       )
-    |||,
+    ||| % $._config,
     local karpenterNodeTerminationP95DurationQuery = std.strReplace(karpenterNodeTerminationP50DurationQuery, '0.5', '0.95'),
     local karpenterNodeTerminationP99DurationQuery = std.strReplace(karpenterNodeTerminationP50DurationQuery, '0.5', '0.99'),
 
     local karpenterPodsStartupP50DurationQuery = |||
       max(
         karpenter_pods_startup_duration_seconds{
+          %(clusterLabel)s="$cluster",
           job=~"$job",
           quantile="0.5"
         }
       )
-    |||,
+    ||| % $._config,
     local karpenterPodsStartupP95DurationQuery = std.strReplace(karpenterPodsStartupP50DurationQuery, '0.5', '0.95'),
     local karpenterPodsStartupP99DurationQuery = std.strReplace(karpenterPodsStartupP50DurationQuery, '0.5', '0.99'),
 
@@ -223,11 +245,12 @@ local tsLegend = tsOptions.legend;
       sum(
         increase(
           karpenter_interruption_received_messages_total{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           }[$__rate_interval]
         )
       ) by (job, message_type)
-    |||,
+    ||| % $._config,
 
     local karpenterInterruptionReceivedMessagesTimeSeriesPanel =
       timeSeriesPanel.new(
@@ -260,11 +283,12 @@ local tsLegend = tsOptions.legend;
       sum(
         increase(
           karpenter_interruption_deleted_messages_total{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           }[$__rate_interval]
         )
       ) by (job)
-    |||,
+    ||| % $._config,
 
     local karpenterInterruptionDeletedMessagesTimeSeriesPanel =
       timeSeriesPanel.new(
@@ -297,6 +321,7 @@ local tsLegend = tsOptions.legend;
         sum(
           irate(
             karpenter_interruption_message_queue_duration_seconds_bucket{
+              %(clusterLabel)s="$cluster",
               job=~"$job"
             }[$__rate_interval]
           ) > 0
@@ -393,10 +418,11 @@ local tsLegend = tsOptions.legend;
     local karpenterWorkQueueDepthQuery = |||
       sum(
         karpenter_workqueue_depth{
+          %(clusterLabel)s="$cluster",
           job=~"$job"
         }
       ) by (job)
-    |||,
+    ||| % $._config,
 
     local karpenterWorkQueueDepthTimeSeriesPanel =
       timeSeriesPanel.new(
@@ -429,6 +455,7 @@ local tsLegend = tsOptions.legend;
         sum(
           irate(
             karpenter_workqueue_queue_duration_seconds_bucket{
+              %(clusterLabel)s="$cluster",
               job=~"$job"
             }[$__rate_interval]
           ) > 0
@@ -484,6 +511,7 @@ local tsLegend = tsOptions.legend;
         sum(
           irate(
             karpenter_workqueue_work_duration_seconds_bucket{
+              %(clusterLabel)s="$cluster",
               job=~"$job"
             }[$__rate_interval]
           ) > 0
@@ -538,11 +566,12 @@ local tsLegend = tsOptions.legend;
       sum(
         rate(
           controller_runtime_reconcile_total{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           }[$__rate_interval]
         )
       ) by (job, controller) > 0
-    |||,
+    ||| % $._config,
 
     local karpenterControllerReconcileTimeSeriesPanel =
       timeSeriesPanel.new(

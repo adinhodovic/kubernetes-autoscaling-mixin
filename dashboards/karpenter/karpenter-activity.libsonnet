@@ -29,10 +29,26 @@ local tsLegend = tsOptions.legend;
       ) +
       datasource.generalOptions.withLabel('Data source'),
 
+    local clusterVariable =
+      query.new(
+        $._config.clusterLabel,
+        'label_values(kube_pod_info{%(kubeStateMetricsSelector)s}, cluster)' % $._config,
+      ) +
+      query.withDatasourceFromVariable(datasourceVariable) +
+      query.withSort() +
+      query.generalOptions.withLabel('Cluster') +
+      query.refresh.onLoad() +
+      query.refresh.onTime() +
+      (
+        if $._config.showMultiCluster
+        then query.generalOptions.showOnDashboard.withLabelAndValue()
+        else query.generalOptions.showOnDashboard.withNothing()
+      ),
+
     local jobVariable =
       query.new(
         'job',
-        'label_values(karpenter_nodes_allocatable{}, job)'
+        'label_values(karpenter_nodes_allocatable{%(clusterLabel)s="$cluster"}, job)' % $._config,
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -43,7 +59,7 @@ local tsLegend = tsOptions.legend;
     local nodePoolVariable =
       query.new(
         'nodepool',
-        'label_values(karpenter_nodepools_allowed_disruptions{job=~"$job"}, nodepool)'
+        'label_values(karpenter_nodepools_allowed_disruptions{%(clusterLabel)s="$cluster", job=~"$job"}, nodepool)' % $._config,
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -55,6 +71,7 @@ local tsLegend = tsOptions.legend;
 
     local variables = [
       datasourceVariable,
+      clusterVariable,
       jobVariable,
       nodePoolVariable,
     ],
@@ -64,13 +81,14 @@ local tsLegend = tsOptions.legend;
         sum(
           increase(
             karpenter_nodes_created_total{
+              %(clusterLabel)s="$cluster",
               job=~"$job",
               nodepool=~"$nodepool"
             }[$__rate_interval]
           )
         ) by (nodepool)
       )
-    |||,
+    ||| % $._config,
 
     local karpenterNodesCreatedByNodePoolTimeSeriesPanel =
       timeSeriesPanel.new(
@@ -133,12 +151,13 @@ local tsLegend = tsOptions.legend;
         sum(
           increase(
             karpenter_voluntary_disruption_decisions_total{
+              %(clusterLabel)s="$cluster",
               job=~"$job",
             }[$__rate_interval]
           )
         ) by (decision, reason)
       )
-    |||,
+    ||| % $._config,
 
     local karpenterNodesVoluntaryDisruptionDecisionsTimeSeriesPanel =
       timeSeriesPanel.new(
@@ -172,12 +191,13 @@ local tsLegend = tsOptions.legend;
         sum(
           increase(
             karpenter_voluntary_disruption_eligible_nodes{
+              %(clusterLabel)s="$cluster",
               job=~"$job",
             }[$__rate_interval]
           )
         ) by (reason)
       )
-    |||,
+    ||| % $._config,
 
     local karpenterNodesVoluntaryDisruptionEligibleTimeSeriesPanel =
       timeSeriesPanel.new(
@@ -212,13 +232,14 @@ local tsLegend = tsOptions.legend;
         sum(
           increase(
             karpenter_nodeclaims_disrupted_total{
+              %(clusterLabel)s="$cluster",
               job=~"$job",
               nodepool=~"$nodepool"
             }[$__rate_interval]
           )
         ) by (nodepool, capacity_type, reason)
       )
-    |||,
+    ||| % $._config,
 
     local karpenterNodesDisruptedTimeSeriesPanel =
       timeSeriesPanel.new(
@@ -251,11 +272,12 @@ local tsLegend = tsOptions.legend;
       round(
         sum(
           karpenter_pods_state{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           }
         ) by (phase)
       )
-    |||,
+    ||| % $._config,
 
     local karpenterPodStateByPhaseTimeSeriesPanel =
       timeSeriesPanel.new(
@@ -287,11 +309,12 @@ local tsLegend = tsOptions.legend;
     local karpenterPodsStartupP50DurationQuery = |||
       max(
         karpenter_pods_startup_duration_seconds{
+          %(clusterLabel)s="$cluster",
           job=~"$job",
           quantile="0.5"
         }
       )
-    |||,
+    ||| % $._config,
     local karpenterPodsStartupP95DurationQuery = std.strReplace(karpenterPodsStartupP50DurationQuery, '0.5', '0.95'),
     local karpenterPodsStartupP99DurationQuery = std.strReplace(karpenterPodsStartupP50DurationQuery, '0.5', '0.99'),
 
