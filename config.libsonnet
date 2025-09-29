@@ -14,12 +14,12 @@ local annotation = g.dashboard.annotation;
     datasourceName: 'default',
 
     // Opt-in to multiCluster dashboards by overriding this and the clusterLabel.
-    showMultiCluster: false,
+    showMultiCluster: true,
     clusterLabel: 'cluster',
 
     kubeStateMetricsSelector: 'job=~"kube-state-metrics"',
 
-    grafanaUrl: 'https://grafana.com',
+    grafanaUrl: 'https://grafana.devops.bestegg.com',
 
     pdbDashboardUid: 'kubernetes-autoscaling-mixin-pdb-jkwq',
     hpaDashboardUid: 'kubernetes-autoscaling-mixin-hpa-jkwq',
@@ -34,13 +34,13 @@ local annotation = g.dashboard.annotation;
     vpa: {
       enabled: true,
       // Optional: If you want to aggregate the VPA by cluster, set it to true requires showMultiCluster to be true.
-      clusterAggregation: false,
+      clusterAggregation: true,
       // Optional: If your VPA names are not based only from the pod name and include a prefix, set it here.
       vpaPrefix: '',
     },
 
     clusterAutoscaler: {
-      enabled: true,
+      enabled: false,
       clusterAutoscalerSelector: 'job="cluster-autoscaler"',
 
       nodeCountCapacityThreshold: 75,
@@ -61,7 +61,7 @@ local annotation = g.dashboard.annotation;
     },
 
     keda: {
-      enabled: true,
+      enabled: false,
 
       kedaScaledObjectDashboardUrl: '%s/d/%s/kubernetes-autoscaling-keda-scaled-object' % [this.grafanaUrl, this.kedaScaledObjectDashboardUid],
       kedaScaledJobDashboardUrl: '%s/d/%s/kubernetes-autoscaling-keda-scaled-job' % [this.grafanaUrl, this.kedaScaledJobDashboardUid],
