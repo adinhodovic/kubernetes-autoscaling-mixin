@@ -312,7 +312,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local karpenterNodePoolsQuery = |||
       count(
         count(
-          karpenter_nodepools_allowed_disruptions{
+          karpenter_nodepools_limit{
             %(clusterLabel)s="$cluster",
             job=~"$job",
           }
