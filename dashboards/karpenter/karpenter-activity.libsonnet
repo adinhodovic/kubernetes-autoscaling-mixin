@@ -66,7 +66,7 @@ local tsLegend = tsOptions.legend;
     local nodePoolVariable =
       query.new(
         'nodepool',
-        'label_values(karpenter_nodepools_allowed_disruptions{%(clusterLabel)s="$cluster", job=~"$job"}, nodepool)' % $._config,
+        'label_values(karpenter_nodepools_limit{%(clusterLabel)s="$cluster", job=~"$job"}, nodepool)' % $._config,
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
