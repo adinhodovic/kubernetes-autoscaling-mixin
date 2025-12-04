@@ -259,17 +259,15 @@ local tbQueryOptions = tablePanel.queryOptions;
       ]),
 
     local hpaMetricTargetsQuery = |||
-      round(
-        sum(
-          kube_horizontalpodautoscaler_spec_target_metric{
-            %(clusterLabel)s="$cluster",
-            job=~"$job",
-            namespace=~"$namespace",
-            horizontalpodautoscaler="$hpa",
-            metric_name=~"$metric_name"
-          }
-        ) by (job, namespace, horizontalpodautoscaler, metric_name, metric_target_type)
-      )
+      sum(
+        kube_horizontalpodautoscaler_spec_target_metric{
+          %(clusterLabel)s="$cluster",
+          job=~"$job",
+          namespace=~"$namespace",
+          horizontalpodautoscaler="$hpa",
+          metric_name=~"$metric_name"
+        }
+      ) by (job, namespace, horizontalpodautoscaler, metric_name, metric_target_type)
     ||| % $._config,
 
     local hpaMetricTargetsTable =
@@ -322,18 +320,16 @@ local tbQueryOptions = tablePanel.queryOptions;
       ]),
 
     local hpaUsageThresholdQuery = |||
-      round(
-        sum(
-          kube_horizontalpodautoscaler_spec_target_metric{
-            %(clusterLabel)s="$cluster",
-            job=~"$job",
-            namespace=~"$namespace",
-            horizontalpodautoscaler="$hpa",
-            metric_name=~"$metric_name",
-            metric_target_type=~"$metric_target_type",
-          }
-        ) by (job, namespace, horizontalpodautoscaler, metric_name, metric_target_type)
-      )
+      sum(
+        kube_horizontalpodautoscaler_spec_target_metric{
+          %(clusterLabel)s="$cluster",
+          job=~"$job",
+          namespace=~"$namespace",
+          horizontalpodautoscaler="$hpa",
+          metric_name=~"$metric_name",
+          metric_target_type=~"$metric_target_type",
+        }
+      ) by (job, namespace, horizontalpodautoscaler, metric_name, metric_target_type)
     ||| % $._config,
     local hpaUtilizationQuery = std.strReplace(hpaUsageThresholdQuery, 'spec_target_metric', 'status_target_metric'),
 
