@@ -150,7 +150,7 @@ local tsLegend = tsOptions.legend;
               job=~"$job"
             }[$__rate_interval]
           )
-        ) by (job, provider, controller, method)
+        ) by (job, provider, controller, method, error)
       )
     ||| % $._config,
 
@@ -165,7 +165,7 @@ local tsLegend = tsOptions.legend;
             karpenterCloudProviderErrorsQuery,
           ) +
           prometheus.withLegendFormat(
-            '{{ provider }} - {{ controller }} - {{ method }}'
+            '{{ provider }} - {{ controller }} - {{ method }} - {{ error }}'
           ) +
           prometheus.withInterval('1m'),
         ]
