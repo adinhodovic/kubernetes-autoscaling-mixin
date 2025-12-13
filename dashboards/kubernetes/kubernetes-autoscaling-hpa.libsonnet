@@ -1,454 +1,214 @@
+local mixinUtils = import 'github.com/adinhodovic/mixin-utils/utils.libsonnet';
 local g = import 'github.com/grafana/grafonnet/gen/grafonnet-latest/main.libsonnet';
+local util = import 'util.libsonnet';
 
 local dashboard = g.dashboard;
 local row = g.panel.row;
 local grid = g.util.grid;
 
-local variable = dashboard.variable;
-local datasource = variable.datasource;
-local query = variable.query;
-local prometheus = g.query.prometheus;
-
-local statPanel = g.panel.stat;
-local timeSeriesPanel = g.panel.timeSeries;
 local tablePanel = g.panel.table;
-
-// Stat
-local stOptions = statPanel.options;
-local stStandardOptions = statPanel.standardOptions;
-local stQueryOptions = statPanel.queryOptions;
-
-// Timeseries
-local tsOptions = timeSeriesPanel.options;
-local tsStandardOptions = timeSeriesPanel.standardOptions;
-local tsQueryOptions = timeSeriesPanel.queryOptions;
-local tsFieldConfig = timeSeriesPanel.fieldConfig;
-local tsCustom = tsFieldConfig.defaults.custom;
-local tsLegend = tsOptions.legend;
-
-// Table
-local tbOptions = tablePanel.options;
-local tbStandardOptions = tablePanel.standardOptions;
-local tbQueryOptions = tablePanel.queryOptions;
 
 {
   grafanaDashboards+:: {
-
-    local datasourceVariable =
-      datasource.new(
-        'datasource',
-        'prometheus',
-      ) +
-      datasource.generalOptions.withLabel('Data source') +
-      {
-        current: {
-          selected: true,
-          text: $._config.datasourceName,
-          value: $._config.datasourceName,
-        },
-      },
-
-    local clusterVariable =
-      query.new(
-        $._config.clusterLabel,
-        'label_values(kube_pod_info{%(kubeStateMetricsSelector)s}, cluster)' % $._config,
-      ) +
-      query.withDatasourceFromVariable(datasourceVariable) +
-      query.withSort() +
-      query.generalOptions.withLabel('Cluster') +
-      query.refresh.onLoad() +
-      query.refresh.onTime() +
-      (
-        if $._config.showMultiCluster
-        then query.generalOptions.showOnDashboard.withLabelAndValue()
-        else query.generalOptions.showOnDashboard.withNothing()
-      ),
-
-    local jobVariable =
-      query.new(
-        'job',
-        'label_values(kube_horizontalpodautoscaler_metadata_generation{%(clusterLabel)s="$cluster"}, job)' % $._config
-      ) +
-      query.withDatasourceFromVariable(datasourceVariable) +
-      query.withSort(1) +
-      query.generalOptions.withLabel('Job') +
-      query.refresh.onLoad() +
-      query.refresh.onTime(),
-
-    local namespaceVariable =
-      query.new(
-        'namespace',
-        'label_values(kube_horizontalpodautoscaler_metadata_generation{%(clusterLabel)s="$cluster", job=~"$job"}, namespace)' % $._config
-      ) +
-      query.withDatasourceFromVariable(datasourceVariable) +
-      query.withSort(1) +
-      query.refresh.onLoad() +
-      query.refresh.onTime(),
-
-    local hpaVariable =
-      query.new(
-        'hpa',
-        'label_values(kube_horizontalpodautoscaler_spec_target_metric{%(clusterLabel)s="$cluster", job=~"$job", namespace="$namespace"},horizontalpodautoscaler)' % $._config
-      ) +
-      query.withDatasourceFromVariable(datasourceVariable) +
-      query.withSort(1) +
-      query.generalOptions.withLabel('Horitzontal Pod Autoscaler') +
-      query.refresh.onLoad() +
-      query.refresh.onTime(),
-
-    local metricNameVariable =
-      query.new(
-        'metric_name',
-        'label_values(kube_horizontalpodautoscaler_spec_target_metric{%(clusterLabel)s="$cluster", job=~"$job", namespace="$namespace", horizontalpodautoscaler="$hpa"}, metric_name)' % $._config
-      ) +
-      query.withDatasourceFromVariable(datasourceVariable) +
-      query.withSort(1) +
-      query.generalOptions.withLabel('Metric Name') +
-      query.refresh.onLoad() +
-      query.refresh.onTime(),
-
-    local metricTargetTypeVariable =
-      query.new(
-        'metric_target_type',
-        'label_values(kube_horizontalpodautoscaler_spec_target_metric{%(clusterLabel)s="$cluster", job=~"$job", namespace="$namespace", horizontalpodautoscaler="$hpa", metric_name=~"$metric_name"}, metric_target_type)' % $._config
-      ) +
-      query.withDatasourceFromVariable(datasourceVariable) +
-      query.withSort(1) +
-      query.generalOptions.withLabel('Metric Target Type') +
-      query.selectionOptions.withMulti(true) +
-      query.selectionOptions.withIncludeAll(true) +
-      query.refresh.onLoad() +
-      query.refresh.onTime(),
-
-    local variables = [
-      datasourceVariable,
-      clusterVariable,
-      jobVariable,
-      namespaceVariable,
-      hpaVariable,
-      metricNameVariable,
-      metricTargetTypeVariable,
-    ],
-
-    local hpaDesiredReplicasQuery = |||
-      round(
-        sum(
-          kube_horizontalpodautoscaler_status_desired_replicas{
-            %(clusterLabel)s="$cluster",
-            job=~"$job",
-            namespace=~"$namespace",
-            horizontalpodautoscaler="$hpa"
-          }
-        )
-      )
-    ||| % $._config,
-
-    local hpaDesiredReplicasStatPanel =
-      statPanel.new(
-        'Desired Replicas',
-      ) +
-      stQueryOptions.withTargets(
-        prometheus.new(
-          '$datasource',
-          hpaDesiredReplicasQuery,
-        )
-      ) +
-      stStandardOptions.withUnit('short') +
-      stOptions.reduceOptions.withCalcs(['lastNotNull']) +
-      stStandardOptions.thresholds.withSteps([
-        stStandardOptions.threshold.step.withValue(0) +
-        stStandardOptions.threshold.step.withColor('red'),
-        stStandardOptions.threshold.step.withValue(0.1) +
-        stStandardOptions.threshold.step.withColor('green'),
-      ]),
-
-    local hpaCurrentReplicasQuery = |||
-      round(
-        sum(
-          kube_horizontalpodautoscaler_status_current_replicas{
-            %(clusterLabel)s="$cluster",
-            job=~"$job",
-            namespace=~"$namespace",
-            horizontalpodautoscaler="$hpa"
-          }
-        )
-      )
-    ||| % $._config,
-
-    local hpaCurrentReplicasStatPanel =
-      statPanel.new(
-        'Current Replicas',
-      ) +
-      stQueryOptions.withTargets(
-        prometheus.new(
-          '$datasource',
-          hpaCurrentReplicasQuery,
-        )
-      ) +
-      stStandardOptions.withUnit('short') +
-      stOptions.reduceOptions.withCalcs(['lastNotNull']) +
-      stStandardOptions.thresholds.withSteps([
-        stStandardOptions.threshold.step.withValue(0) +
-        stStandardOptions.threshold.step.withColor('red'),
-        stStandardOptions.threshold.step.withValue(0.1) +
-        stStandardOptions.threshold.step.withColor('green'),
-      ]),
-
-    local hpaMinReplicasQuery = |||
-      round(
-        sum(
-          kube_horizontalpodautoscaler_spec_min_replicas{
-            %(clusterLabel)s="$cluster",
-            job=~"$job",
-            namespace=~"$namespace",
-            horizontalpodautoscaler="$hpa"
-          }
-        )
-      )
-    ||| % $._config,
-
-    local hpaMinReplicasStatPanel =
-      statPanel.new(
-        'Min Replicas',
-      ) +
-      stQueryOptions.withTargets(
-        prometheus.new(
-          '$datasource',
-          hpaMinReplicasQuery,
-        )
-      ) +
-      stStandardOptions.withUnit('short') +
-      stOptions.reduceOptions.withCalcs(['lastNotNull']) +
-      stStandardOptions.thresholds.withSteps([
-        stStandardOptions.threshold.step.withValue(0) +
-        stStandardOptions.threshold.step.withColor('red'),
-        stStandardOptions.threshold.step.withValue(0.1) +
-        stStandardOptions.threshold.step.withColor('green'),
-      ]),
-
-    local hpaMaxReplicasQuery = |||
-      round(
-        sum(
-          kube_horizontalpodautoscaler_spec_max_replicas{
-            %(clusterLabel)s="$cluster",
-            job=~"$job",
-            namespace=~"$namespace",
-            horizontalpodautoscaler="$hpa"
-          }
-        )
-      )
-    ||| % $._config,
-
-    local hpaMaxReplicasStatPanel =
-      statPanel.new(
-        'Max Replicas',
-      ) +
-      stQueryOptions.withTargets(
-        prometheus.new(
-          '$datasource',
-          hpaMaxReplicasQuery,
-        )
-      ) +
-      stStandardOptions.withUnit('short') +
-      stOptions.reduceOptions.withCalcs(['lastNotNull']) +
-      stStandardOptions.thresholds.withSteps([
-        stStandardOptions.threshold.step.withValue(0) +
-        stStandardOptions.threshold.step.withColor('red'),
-        stStandardOptions.threshold.step.withValue(0.1) +
-        stStandardOptions.threshold.step.withColor('green'),
-      ]),
-
-    local hpaMetricTargetsQuery = |||
-      sum(
-        kube_horizontalpodautoscaler_spec_target_metric{
-          %(clusterLabel)s="$cluster",
-          job=~"$job",
-          namespace=~"$namespace",
-          horizontalpodautoscaler="$hpa",
-          metric_name=~"$metric_name"
-        }
-      ) by (job, namespace, horizontalpodautoscaler, metric_name, metric_target_type)
-    ||| % $._config,
-
-    local hpaMetricTargetsTable =
-      tablePanel.new(
-        'Metric Targets'
-      ) +
-      tbStandardOptions.withUnit('short') +
-      tbOptions.withSortBy(
-        tbOptions.sortBy.withDisplayName('Horitzontal Pod Autoscaler')
-      ) +
-      tbQueryOptions.withTargets(
-        [
-          prometheus.new(
-            '$datasource',
-            hpaMetricTargetsQuery,
-          ) +
-          prometheus.withFormat('table') +
-          prometheus.withInstant(true),
-        ]
-      ) +
-      tbQueryOptions.withTransformations([
-        tbQueryOptions.transformation.withId(
-          'merge'
-        ),
-        tbQueryOptions.transformation.withId(
-          'organize'
-        ) +
-        tbQueryOptions.transformation.withOptions(
-          {
-            renameByName: {
-              namespace: 'Namespace',
-              horizontalpodautoscaler: 'Horitzontal Pod Autoscaler',
-              metric_name: 'Metric Name',
-              metric_target_type: 'Metric Target Type',
-              'Value #A': 'Threshold',
-            },
-            indexByName: {
-              horizontalpodautoscaler: 0,
-              namespace: 1,
-              metric_name: 2,
-              metric_target_type: 3,
-              'Value #A': 4,
-            },
-            excludeByName: {
-              Time: true,
-              job: true,
-            },
-          }
-        ),
-      ]),
-
-    local hpaUsageThresholdQuery = |||
-      sum(
-        kube_horizontalpodautoscaler_spec_target_metric{
-          %(clusterLabel)s="$cluster",
-          job=~"$job",
-          namespace=~"$namespace",
-          horizontalpodautoscaler="$hpa",
-          metric_name=~"$metric_name",
-          metric_target_type=~"$metric_target_type",
-        }
-      ) by (job, namespace, horizontalpodautoscaler, metric_name, metric_target_type)
-    ||| % $._config,
-    local hpaUtilizationQuery = std.strReplace(hpaUsageThresholdQuery, 'spec_target_metric', 'status_target_metric'),
-
-    local hpaUsageThresholdTimeSeriesPanel =
-      timeSeriesPanel.new(
-        'Usage & Threshold',
-      ) +
-      tsQueryOptions.withTargets(
-        [
-          prometheus.new(
-            '$datasource',
-            hpaUtilizationQuery,
-          ) +
-          prometheus.withLegendFormat(
-            '{{ metric_target_type }} / {{ metric_name }}'
-          ),
-          prometheus.new(
-            '$datasource',
-            hpaUsageThresholdQuery,
-          ) +
-          prometheus.withLegendFormat(
-            'Threshold / {{ metric_name }}'
-          ),
-        ]
-      ) +
-      tsStandardOptions.withUnit('short') +
-      tsOptions.tooltip.withMode('multi') +
-      tsOptions.tooltip.withSort('desc') +
-      tsLegend.withShowLegend(true) +
-      tsLegend.withDisplayMode('table') +
-      tsLegend.withPlacement('right') +
-      tsLegend.withCalcs(['lastNotNull', 'mean', 'max']) +
-      tsLegend.withSortBy('Last *') +
-      tsLegend.withSortDesc(true) +
-      tsCustom.withSpanNulls(false),
-
-    local hpaReplicasTimeSeriesPanel =
-      timeSeriesPanel.new(
-        'Replicas',
-      ) +
-      tsQueryOptions.withTargets(
-        [
-          prometheus.new(
-            '$datasource',
-            hpaDesiredReplicasQuery,
-          ) +
-          prometheus.withLegendFormat(
-            'Desired Replicas'
-          ),
-          prometheus.new(
-            '$datasource',
-            hpaCurrentReplicasQuery,
-          ) +
-          prometheus.withLegendFormat(
-            'Current Replicas'
-          ),
-          prometheus.new(
-            '$datasource',
-            hpaMinReplicasQuery,
-          ) +
-          prometheus.withLegendFormat(
-            'Min Replicas'
-          ),
-          prometheus.new(
-            '$datasource',
-            hpaMaxReplicasQuery,
-          ) +
-          prometheus.withLegendFormat(
-            'Max Replicas'
-          ),
-        ]
-      ) +
-      tsStandardOptions.withUnit('short') +
-      tsOptions.tooltip.withMode('multi') +
-      tsOptions.tooltip.withSort('desc') +
-      tsLegend.withShowLegend(true) +
-      tsLegend.withDisplayMode('table') +
-      tsLegend.withPlacement('right') +
-      tsLegend.withCalcs(['lastNotNull', 'mean', 'max']) +
-      tsLegend.withSortBy('Last *') +
-      tsLegend.withSortDesc(true) +
-      tsCustom.withSpanNulls(false),
-
-    local hpaSummaryRow =
-      row.new(
-        title='Summary',
-      ),
-
-    local hpaTargetTypeRow =
-      row.new(
-        title='Target Type $metric_name / $metric_target_type' % $._config,
-      ) +
-      row.withRepeat('metric_target_type'),
-
     'kubernetes-autoscaling-mixin-hpa.json':
-      $._config.bypassDashboardValidation +
-      dashboard.new(
-        'Kubernetes / Autoscaling / Horizontal Pod Autoscaler',
+
+      local defaultVariables = util.variables($._config);
+
+      local hpaVar = g.dashboard.variable.query.new(
+        'hpa',
+        'label_values(kube_horizontalpodautoscaler_spec_target_metric{cluster="$cluster", namespace="$namespace"}, horizontalpodautoscaler)'
       ) +
-      dashboard.withDescription('A dashboard that monitors Kubernetes and focuses on giving a overview for horizontal pod autoscalers. It is created using the [kubernetes-autoscaling-mixin](https://github.com/adinhodovic/kubernetes-autoscaling-mixin).') +
-      dashboard.withUid($._config.hpaDashboardUid) +
-      dashboard.withTags($._config.tags + ['kubernetes-core']) +
-      dashboard.withTimezone('utc') +
-      dashboard.withEditable(true) +
-      dashboard.time.withFrom('now-6h') +
-      dashboard.time.withTo('now') +
-      dashboard.withVariables(variables) +
-      dashboard.withLinks(
-        [
-          dashboard.link.dashboards.new('Kubernetes / Autoscaling', $._config.tags) +
-          dashboard.link.link.options.withTargetBlank(true) +
-          dashboard.link.link.options.withAsDropdown(true) +
-          dashboard.link.link.options.withIncludeVars(true) +
-          dashboard.link.link.options.withKeepTime(true),
-        ]
+      g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
+      g.dashboard.variable.query.withSort() +
+      g.dashboard.variable.query.generalOptions.withLabel('HPA') +
+      g.dashboard.variable.query.selectionOptions.withMulti(false) +
+      g.dashboard.variable.query.selectionOptions.withIncludeAll(false) +
+      g.dashboard.variable.query.refresh.onLoad() +
+      g.dashboard.variable.query.refresh.onTime();
+
+      local metricNameVar = g.dashboard.variable.query.new(
+        'metric_name',
+        'label_values(kube_horizontalpodautoscaler_spec_target_metric{cluster="$cluster", namespace="$namespace", horizontalpodautoscaler="$hpa"}, metric_name)'
       ) +
-      dashboard.withPanels(
+      g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
+      g.dashboard.variable.query.withSort() +
+      g.dashboard.variable.query.generalOptions.withLabel('Metric Name') +
+      g.dashboard.variable.query.selectionOptions.withMulti(true) +
+      g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
+      g.dashboard.variable.query.refresh.onLoad() +
+      g.dashboard.variable.query.refresh.onTime();
+
+      local metricTargetTypeVar = g.dashboard.variable.query.new(
+        'metric_target_type',
+        'label_values(kube_horizontalpodautoscaler_spec_target_metric{cluster="$cluster", namespace="$namespace", horizontalpodautoscaler="$hpa", metric_name=~"$metric_name"}, metric_target_type)'
+      ) +
+      g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
+      g.dashboard.variable.query.withSort() +
+      g.dashboard.variable.query.generalOptions.withLabel('Metric Target Type') +
+      g.dashboard.variable.query.selectionOptions.withMulti(true) +
+      g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
+      g.dashboard.variable.query.refresh.onLoad() +
+      g.dashboard.variable.query.refresh.onTime();
+
+      local variables = [
+        defaultVariables.datasource,
+        defaultVariables.cluster,
+        defaultVariables.namespace,
+        hpaVar,
+        metricNameVar,
+        metricTargetTypeVar,
+      ];
+
+      local queries = {
+        desiredReplicas: |||
+          round(
+            sum(
+              kube_horizontalpodautoscaler_status_desired_replicas{
+                cluster="$cluster",
+                namespace=~"$namespace",
+                horizontalpodautoscaler="$hpa"
+              }
+            )
+          )
+        |||,
+
+        currentReplicas: |||
+          round(
+            sum(
+              kube_horizontalpodautoscaler_status_current_replicas{
+                cluster="$cluster",
+                namespace=~"$namespace",
+                horizontalpodautoscaler="$hpa"
+              }
+            )
+          )
+        |||,
+
+        minReplicas: |||
+          round(
+            sum(
+              kube_horizontalpodautoscaler_spec_min_replicas{
+                cluster="$cluster",
+                namespace=~"$namespace",
+                horizontalpodautoscaler="$hpa"
+              }
+            )
+          )
+        |||,
+
+        maxReplicas: |||
+          round(
+            sum(
+              kube_horizontalpodautoscaler_spec_max_replicas{
+                cluster="$cluster",
+                namespace=~"$namespace",
+                horizontalpodautoscaler="$hpa"
+              }
+            )
+          )
+        |||,
+
+        metricTargets: |||
+          sum(
+            kube_horizontalpodautoscaler_spec_target_metric{
+              cluster="$cluster",
+              namespace=~"$namespace",
+              horizontalpodautoscaler="$hpa",
+              metric_name=~"$metric_name"
+            }
+          ) by (job, namespace, horizontalpodautoscaler, metric_name, metric_target_type)
+        |||,
+
+        usageThreshold: |||
+          sum(
+            kube_horizontalpodautoscaler_spec_target_metric{
+              cluster="$cluster",
+              namespace=~"$namespace",
+              horizontalpodautoscaler="$hpa",
+              metric_name=~"$metric_name",
+              metric_target_type=~"$metric_target_type"
+            }
+          ) by (job, namespace, horizontalpodautoscaler, metric_name, metric_target_type)
+        |||,
+
+        utilization: |||
+          sum(
+            kube_horizontalpodautoscaler_status_target_metric{
+              cluster="$cluster",
+              namespace=~"$namespace",
+              horizontalpodautoscaler="$hpa",
+              metric_name=~"$metric_name",
+              metric_target_type=~"$metric_target_type"
+            }
+          ) by (job, namespace, horizontalpodautoscaler, metric_name, metric_target_type)
+        |||,
+      };
+
+      local panels = {
+        desiredReplicas:
+          mixinUtils.dashboards.statPanel(
+            'Desired Replicas',
+            'short',
+            queries.desiredReplicas,
+            description='The desired number of replicas for the HPA.',
+          ),
+
+        currentReplicas:
+          mixinUtils.dashboards.statPanel(
+            'Current Replicas',
+            'short',
+            queries.currentReplicas,
+            description='The current number of replicas for the HPA.',
+          ),
+
+        minReplicas:
+          mixinUtils.dashboards.statPanel(
+            'Min Replicas',
+            'short',
+            queries.minReplicas,
+            description='The minimum number of replicas configured for the HPA.',
+          ),
+
+        maxReplicas:
+          mixinUtils.dashboards.statPanel(
+            'Max Replicas',
+            'short',
+            queries.maxReplicas,
+            description='The maximum number of replicas configured for the HPA.',
+          ),
+
+        usageThreshold:
+          mixinUtils.dashboards.timeSeriesPanel(
+            'Usage Threshold',
+            'short',
+            queries.usageThreshold,
+            '{{ metric_name }} / {{ metric_target_type }}',
+            calcs=['lastNotNull', 'mean', 'max'],
+            description='The configured threshold for the HPA metric.',
+          ),
+
+        utilization:
+          mixinUtils.dashboards.timeSeriesPanel(
+            'Utilization',
+            'short',
+            queries.utilization,
+            '{{ metric_name }} / {{ metric_target_type }}',
+            calcs=['lastNotNull', 'mean', 'max'],
+            description='The current utilization of the HPA metric.',
+          ),
+
+        metricTargetsTable:
+          mixinUtils.dashboards.tablePanel(
+            'Metric Targets',
+            'short',
+            queries.metricTargets,
+            description='Configured metric targets for the HPA.',
+          ),
+      };
+
+      local rows =
         [
-          hpaSummaryRow +
+          row.new('Summary') +
           row.gridPos.withX(0) +
           row.gridPos.withY(0) +
           row.gridPos.withW(24) +
@@ -456,40 +216,59 @@ local tbQueryOptions = tablePanel.queryOptions;
         ] +
         grid.makeGrid(
           [
-            hpaDesiredReplicasStatPanel,
-            hpaCurrentReplicasStatPanel,
-            hpaMinReplicasStatPanel,
-            hpaMaxReplicasStatPanel,
+            panels.desiredReplicas,
+            panels.currentReplicas,
+            panels.minReplicas,
+            panels.maxReplicas,
           ],
           panelWidth=6,
-          panelHeight=3,
+          panelHeight=4,
           startY=1
         ) +
         [
-          hpaMetricTargetsTable +
-          tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(6) +
-          tablePanel.gridPos.withW(24) +
-          tablePanel.gridPos.withH(8),
-          hpaTargetTypeRow +
+          row.new('Metrics') +
+          row.gridPos.withX(0) +
+          row.gridPos.withY(5) +
+          row.gridPos.withW(24) +
+          row.gridPos.withH(1),
+        ] +
+        grid.makeGrid(
+          [
+            panels.usageThreshold,
+            panels.utilization,
+          ],
+          panelWidth=12,
+          panelHeight=8,
+          startY=6
+        ) +
+        [
+          row.new('Metric Targets') +
           row.gridPos.withX(0) +
           row.gridPos.withY(14) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
-          hpaUsageThresholdTimeSeriesPanel +
-          timeSeriesPanel.gridPos.withX(0) +
-          timeSeriesPanel.gridPos.withY(15) +
-          timeSeriesPanel.gridPos.withW(24) +
-          timeSeriesPanel.gridPos.withH(6),
-          hpaReplicasTimeSeriesPanel +
-          timeSeriesPanel.gridPos.withX(0) +
-          timeSeriesPanel.gridPos.withY(21) +
-          timeSeriesPanel.gridPos.withW(24) +
-          timeSeriesPanel.gridPos.withH(6),
-        ]
+          panels.metricTargetsTable +
+          tablePanel.gridPos.withX(0) +
+          tablePanel.gridPos.withY(15) +
+          tablePanel.gridPos.withW(24) +
+          tablePanel.gridPos.withH(8),
+        ];
+
+      mixinUtils.dashboards.bypassDashboardValidation +
+      dashboard.new(
+        'Kubernetes / Autoscaling / HPA',
       ) +
-      if $._config.annotation.enabled then
-        dashboard.withAnnotations($._config.customAnnotation)
-      else {},
+      dashboard.withDescription('A dashboard that monitors Horizontal Pod Autoscalers. %s' % mixinUtils.dashboards.dashboardDescriptionLink('kubernetes-autoscaling-mixin', 'https://github.com/adinhodovic/kubernetes-autoscaling-mixin')) +
+      dashboard.withUid($._config.hpaDashboardUid) +
+      dashboard.withTags($._config.tags + ['hpa']) +
+      dashboard.withTimezone('utc') +
+      dashboard.withEditable(true) +
+      dashboard.time.withFrom('now-6h') +
+      dashboard.time.withTo('now') +
+      dashboard.withVariables(variables) +
+      dashboard.withLinks(
+        mixinUtils.dashboards.dashboardLinks('Kubernetes / Autoscaling', $._config, dropdown=true)
+      ) +
+      dashboard.withPanels(rows),
   },
 }

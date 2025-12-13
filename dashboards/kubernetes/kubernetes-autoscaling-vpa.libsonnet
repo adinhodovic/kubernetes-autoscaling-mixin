@@ -1,791 +1,345 @@
+local mixinUtils = import 'github.com/adinhodovic/mixin-utils/utils.libsonnet';
 local g = import 'github.com/grafana/grafonnet/gen/grafonnet-latest/main.libsonnet';
+local util = import 'util.libsonnet';
 
 local dashboard = g.dashboard;
 local row = g.panel.row;
 local grid = g.util.grid;
 
-local variable = dashboard.variable;
-local datasource = variable.datasource;
-local query = variable.query;
-local prometheus = g.query.prometheus;
-
-local statPanel = g.panel.stat;
-local timeSeriesPanel = g.panel.timeSeries;
 local tablePanel = g.panel.table;
 
-// Stat
-local stOptions = statPanel.options;
-local stStandardOptions = statPanel.standardOptions;
-local stQueryOptions = statPanel.queryOptions;
-local stOverride = statPanel.fieldOverride;
-
-// Timeseries
-local tsOptions = timeSeriesPanel.options;
-local tsStandardOptions = timeSeriesPanel.standardOptions;
-local tsQueryOptions = timeSeriesPanel.queryOptions;
-local tsFieldConfig = timeSeriesPanel.fieldConfig;
-local tsCustom = tsFieldConfig.defaults.custom;
-local tsLegend = tsOptions.legend;
-
-// Table
-local tbOptions = tablePanel.options;
-local tbStandardOptions = tablePanel.standardOptions;
-local tbQueryOptions = tablePanel.queryOptions;
-local tbFieldConfig = tablePanel.fieldConfig;
-local tbOverride = tbStandardOptions.override;
-
 {
-  grafanaDashboards+:: std.prune({
+  grafanaDashboards+:: {
+    'kubernetes-autoscaling-mixin-vpa.json':
+      if !$._config.vpa.enabled then {} else
 
-    local datasourceVariable =
-      datasource.new(
-        'datasource',
-        'prometheus',
-      ) +
-      datasource.generalOptions.withLabel('Data source') +
-      {
-        current: {
-          selected: true,
-          text: $._config.datasourceName,
-          value: $._config.datasourceName,
-        },
-      },
+        local defaultVariables = util.variables($._config);
 
-    local clusterVariable =
-      query.new(
-        $._config.clusterLabel,
-        'label_values(kube_pod_info{%(kubeStateMetricsSelector)s}, cluster)' % $._config,
-      ) +
-      query.withDatasourceFromVariable(datasourceVariable) +
-      query.withSort() +
-      query.generalOptions.withLabel('Cluster') +
-      query.refresh.onLoad() +
-      query.refresh.onTime() +
-      (
-        if $._config.showMultiCluster then
-          (
-            query.generalOptions.showOnDashboard.withLabelAndValue() +
-            query.withSort(1) +
-            query.selectionOptions.withMulti($._config.vpa.clusterAggregation)
-          )
-        else query.generalOptions.showOnDashboard.withNothing()
-      ),
-
-    local jobVariable =
-      query.new(
-        'job',
-        'label_values(kube_customresource_verticalpodautoscaler_labels{%(clusterLabel)s=~"$cluster"}, job)' % $._config,
-      ) +
-      query.withDatasourceFromVariable(datasourceVariable) +
-      query.withSort(1) +
-      query.generalOptions.withLabel('Job') +
-      query.refresh.onLoad() +
-      query.refresh.onTime(),
-
-    local namespaceVariable =
-      query.new(
-        'namespace',
-        'label_values(kube_customresource_verticalpodautoscaler_labels{%(clusterLabel)s=~"$cluster", job=~"$job"}, namespace)' % $._config
-      ) +
-      query.withDatasourceFromVariable(datasourceVariable) +
-      query.withSort(1) +
-      query.generalOptions.withLabel('Namespace') +
-      query.selectionOptions.withMulti(true) +
-      query.refresh.onLoad() +
-      query.refresh.onTime(),
-
-    local vpaVariable =
-      query.new(
-        'vpa',
-        'label_values(kube_customresource_verticalpodautoscaler_labels{%(clusterLabel)s=~"$cluster", job=~"$job", namespace=~"$namespace"}, verticalpodautoscaler)' % $._config
-      ) +
-      query.withDatasourceFromVariable(datasourceVariable) +
-      query.withSort(1) +
-      query.generalOptions.withLabel('VPA Pod Autoscaler') +
-      query.refresh.onLoad() +
-      query.refresh.onTime(),
-
-    local containerVariable =
-      query.new(
-        'container',
-        'label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{%(clusterLabel)s=~"$cluster", job=~"$job", namespace=~"$namespace", verticalpodautoscaler=~"$vpa"}, container)' % $._config
-      ) +
-      query.withDatasourceFromVariable(datasourceVariable) +
-      query.withSort(1) +
-      query.generalOptions.withLabel('Container') +
-      query.selectionOptions.withMulti(true) +
-      query.selectionOptions.withIncludeAll(true) +
-      query.refresh.onLoad() +
-      query.refresh.onTime(),
-
-    local variables = [
-      datasourceVariable,
-      clusterVariable,
-      jobVariable,
-      namespaceVariable,
-      vpaVariable,
-      containerVariable,
-    ],
-
-    local vpaRequestConfig = $._config.vpa { clusterLabel: $._config.clusterLabel },
-    local vpaCpuRequestsQuery = |||
-      max(
-        label_replace(
-          max(
-            kube_pod_container_resource_requests{
-              %(clusterLabel)s=~"$cluster",
-              job=~"$job",
-              namespace=~"$namespace",
-              resource="cpu"
-            }
-          ) by (%(clusterLabel)s, job, namespace, pod, container, resource),
-          "verticalpodautoscaler", "%(vpaPrefix)s$1", "pod", "^(.*?)(?:-[a-f0-9]{8,10}-[a-z0-9]{5}|-[0-9]+|-[a-z0-9]{5,16})$"
-        )
-        + on(%(clusterLabel)s, job, namespace, container, resource, verticalpodautoscaler) group_left()
-        0 *
-        max(
-          kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{
-            %(clusterLabel)s=~"$cluster",
-            job=~"$job",
-            namespace=~"$namespace",
-            resource="cpu"
-          }
-        ) by (%(clusterLabel)s, job, namespace, verticalpodautoscaler, container, resource)
-      )
-      by (%(clusterLabel)s, job, namespace, verticalpodautoscaler, container, resource)
-    ||| % vpaRequestConfig,
-    local vpaCpuLimitsQuery = std.strReplace(vpaCpuRequestsQuery, 'requests', 'limits'),
-
-    local vpaCpuRecommendationTargetQuery = |||
-      max(
-        kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{
-          %(clusterLabel)s=~"$cluster",
-          job=~"$job",
-          namespace=~"$namespace",
-          resource="cpu"
-        }
-      ) by (job, %(clusterLabel)s, namespace, verticalpodautoscaler, container, resource)
-    ||| % $._config,
-    local vpaCpuRecommendationLowerBoundQuery = std.strReplace(vpaCpuRecommendationTargetQuery, 'target', 'lowerbound'),
-    local vpaCpuRecommendationUpperBoundQuery = std.strReplace(vpaCpuRecommendationTargetQuery, 'target', 'upperbound'),
-
-    local vpaTableTransformationOptions = {
-      renameByName: {
-        cluster: 'Cluster',
-        verticalpodautoscaler: 'Vertical Pod Autoscaler',
-        container: 'Container',
-        resource: 'Resource',
-        'Value #A': 'Requests',
-        'Value #B': 'Limits',
-        'Value #C': 'Lower Bound',
-        'Value #D': 'Target',
-        'Value #E': 'Upper Bound',
-      },
-      indexByName: {
-        cluster: 0,
-        verticalpodautoscaler: 1,
-        container: 2,
-        resource: 3,
-        'Value #A': 4,
-        'Value #B': 5,
-        'Value #C': 6,
-        'Value #D': 7,
-        'Value #E': 8,
-      },
-      excludeByName: {
-        cluster: !$._config.vpa.clusterAggregation,
-        Time: true,
-        job: true,
-        namespace: true,
-      },
-    },
-
-    local vpaCpuResourceTable =
-      tablePanel.new(
-        'CPU Resource Recommendations',
-      ) +
-      tbStandardOptions.withUnit('short') +
-      tbOptions.withSortBy(
-        tbOptions.sortBy.withDisplayName('Vertical Pod Autoscaler')
-      ) +
-      tbOptions.footer.withEnablePagination(true) +
-      tbQueryOptions.withTargets(
-        [
-          prometheus.new(
-            '$datasource',
-            vpaCpuRequestsQuery,
-          ) +
-          prometheus.withLegendFormat(
-            'Requests'
-          ) +
-          prometheus.withInstant(true) +
-          prometheus.withFormat('table'),
-          prometheus.new(
-            '$datasource',
-            vpaCpuLimitsQuery,
-          ) +
-          prometheus.withLegendFormat(
-            'Limits'
-          ) +
-          prometheus.withInstant(true) +
-          prometheus.withFormat('table'),
-          prometheus.new(
-            '$datasource',
-            vpaCpuRecommendationLowerBoundQuery,
-          ) +
-          prometheus.withLegendFormat(
-            'Lower Bound'
-          ) +
-          prometheus.withInstant(true) +
-          prometheus.withFormat('table'),
-          prometheus.new(
-            '$datasource',
-            vpaCpuRecommendationTargetQuery,
-          ) +
-          prometheus.withLegendFormat(
-            'Target'
-          ) +
-          prometheus.withInstant(true) +
-          prometheus.withFormat('table'),
-          prometheus.new(
-            '$datasource',
-            vpaCpuRecommendationUpperBoundQuery,
-          ) +
-          prometheus.withInstant(true) +
-          prometheus.withFormat('table') +
-          prometheus.withLegendFormat(
-            'Upper Bound'
-          ),
-        ]
-      ) +
-      tbQueryOptions.withTransformations([
-        tbQueryOptions.transformation.withId(
-          'merge'
-        ),
-        tbQueryOptions.transformation.withId(
-          'organize'
+        local vpaVar = g.dashboard.variable.query.new(
+          'vpa',
+          'label_values(kube_customresource_verticalpodautoscaler_labels{cluster=~"$cluster", namespace=~"$namespace"}, verticalpodautoscaler)'
         ) +
-        tbQueryOptions.transformation.withOptions(vpaTableTransformationOptions),
-      ]) +
-      tbStandardOptions.withOverrides([
-        tbOverride.byName.new('Lower Bound') +
-        tbOverride.byName.withPropertiesFromOptions(
-          tbFieldConfig.defaults.custom.withCellOptions(
-            { type: 'color-background' }  // TODO(adinhodovic): Use jsonnet lib
-          ) +
-          tbStandardOptions.color.withMode('fixed') +
-          tbStandardOptions.color.withFixedColor('dark-red') +
-          tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withMode('basic'),
-        ),
-        tbOverride.byName.new('Target') +
-        tbOverride.byName.withPropertiesFromOptions(
-          tbFieldConfig.defaults.custom.withCellOptions(
-            { type: 'color-background' }  // TODO(adinhodovic): Use jsonnet lib
-          ) +
-          tbStandardOptions.color.withMode('fixed') +
-          tbStandardOptions.color.withFixedColor('yellow') +
-          tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withMode('basic'),
-        ),
-        tbOverride.byName.new('Upper Bound') +
-        tbOverride.byName.withPropertiesFromOptions(
-          tbFieldConfig.defaults.custom.withCellOptions(
-            { type: 'color-background' }  // TODO(adinhodovic): Use jsonnet lib
-          ) +
-          tbStandardOptions.color.withMode('fixed') +
-          tbStandardOptions.color.withFixedColor('green') +
-          tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withMode('basic'),
-        ),
-      ]),
+        g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
+        g.dashboard.variable.query.withSort() +
+        g.dashboard.variable.query.generalOptions.withLabel('VPA') +
+        g.dashboard.variable.query.selectionOptions.withMulti(true) +
+        g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
+        g.dashboard.variable.query.refresh.onLoad() +
+        g.dashboard.variable.query.refresh.onTime();
 
-    local vpaMemoryRequestsQuery = std.strReplace(vpaCpuRequestsQuery, 'cpu', 'memory'),
-    local vpaMemoryLimitsQuery = std.strReplace(vpaCpuLimitsQuery, 'cpu', 'memory'),
-    local vpaMemoryRecommendationTargetQuery = std.strReplace(vpaCpuRecommendationTargetQuery, 'cpu', 'memory'),
-    local vpaMemoryRecommendationLowerBoundQuery = std.strReplace(vpaMemoryRecommendationTargetQuery, 'target', 'lowerbound'),
-    local vpaMemoryRecommendationUpperBoundQuery = std.strReplace(vpaMemoryRecommendationTargetQuery, 'target', 'upperbound'),
-
-    local vpaMemoryResourceTable =
-      tablePanel.new(
-        'Memory Resource Recommendations',
-      ) +
-      tbStandardOptions.withUnit('bytes') +
-      tbOptions.withSortBy(
-        tbOptions.sortBy.withDisplayName('Vertical Pod Autoscaler')
-      ) +
-      tbOptions.footer.withEnablePagination(true) +
-      tbQueryOptions.withTargets(
-        [
-          prometheus.new(
-            '$datasource',
-            vpaMemoryRequestsQuery,
-          ) +
-          prometheus.withLegendFormat(
-            'Requests'
-          ) +
-          prometheus.withInstant(true) +
-          prometheus.withFormat('table'),
-          prometheus.new(
-            '$datasource',
-            vpaMemoryLimitsQuery,
-          ) +
-          prometheus.withLegendFormat(
-            'Limits'
-          ) +
-          prometheus.withInstant(true) +
-          prometheus.withFormat('table'),
-          prometheus.new(
-            '$datasource',
-            vpaMemoryRecommendationLowerBoundQuery,
-          ) +
-          prometheus.withLegendFormat(
-            'Lower Bound'
-          ) +
-          prometheus.withInstant(true) +
-          prometheus.withFormat('table'),
-          prometheus.new(
-            '$datasource',
-            vpaMemoryRecommendationTargetQuery,
-          ) +
-          prometheus.withLegendFormat(
-            'Target'
-          ) +
-          prometheus.withInstant(true) +
-          prometheus.withFormat('table'),
-          prometheus.new(
-            '$datasource',
-            vpaMemoryRecommendationUpperBoundQuery,
-          ) +
-          prometheus.withInstant(true) +
-          prometheus.withFormat('table') +
-          prometheus.withLegendFormat(
-            'Upper Bound'
-          ),
-        ]
-      ) +
-      tbQueryOptions.withTransformations([
-        tbQueryOptions.transformation.withId(
-          'merge'
-        ),
-        tbQueryOptions.transformation.withId(
-          'organize'
+        local containerVar = g.dashboard.variable.query.new(
+          'container',
+          'label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{cluster=~"$cluster", namespace=~"$namespace", verticalpodautoscaler=~"$vpa"}, container)'
         ) +
-        tbQueryOptions.transformation.withOptions(vpaTableTransformationOptions),
-      ]) +
-      tbStandardOptions.withOverrides([
-        tbOverride.byName.new('Lower Bound') +
-        tbOverride.byName.withPropertiesFromOptions(
-          tbFieldConfig.defaults.custom.withCellOptions(
-            { type: 'color-background' }  // TODO(adinhodovic): Use jsonnet lib
-          ) +
-          tbStandardOptions.color.withMode('fixed') +
-          tbStandardOptions.color.withFixedColor('dark-red') +
-          tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withMode('basic'),
-        ),
-        tbOverride.byName.new('Target') +
-        tbOverride.byName.withPropertiesFromOptions(
-          tbFieldConfig.defaults.custom.withCellOptions(
-            { type: 'color-background' }  // TODO(adinhodovic): Use jsonnet lib
-          ) +
-          tbStandardOptions.color.withMode('fixed') +
-          tbStandardOptions.color.withFixedColor('yellow') +
-          tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withMode('basic'),
-        ),
-        tbOverride.byName.new('Upper Bound') +
-        tbOverride.byName.withPropertiesFromOptions(
-          tbFieldConfig.defaults.custom.withCellOptions(
-            { type: 'color-background' }  // TODO(adinhodovic): Use jsonnet lib
-          ) +
-          tbStandardOptions.color.withMode('fixed') +
-          tbStandardOptions.color.withFixedColor('green') +
-          tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withMode('basic'),
-        ),
-      ]),
+        g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
+        g.dashboard.variable.query.withSort() +
+        g.dashboard.variable.query.generalOptions.withLabel('Container') +
+        g.dashboard.variable.query.selectionOptions.withMulti(true) +
+        g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
+        g.dashboard.variable.query.refresh.onLoad() +
+        g.dashboard.variable.query.refresh.onTime();
 
-    local vpaCpuRecommendationTargetOverTimeQuery = |||
-      max(
-        kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{
-          %(clusterLabel)s=~"$cluster",
-          job=~"$job",
-          namespace=~"$namespace",
-          resource="cpu",
-          verticalpodautoscaler=~"$vpa",
-          container=~"$container"
-        }
-      ) by (%(clusterLabel)s, job, namespace, verticalpodautoscaler, container, resource)
-    ||| % $._config,
-    local vpaCpuRecommendationLowerBoundOverTimeQuery = std.strReplace(vpaCpuRecommendationTargetOverTimeQuery, 'target', 'lowerbound'),
-    local vpaCpuRecommendationUpperBoundOverTimeQuery = std.strReplace(vpaCpuRecommendationTargetOverTimeQuery, 'target', 'upperbound'),
-    local vpaCpuUsageOverTimeQuery = |||
-      avg(
-        node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{
-          %(clusterLabel)s=~"$cluster",
-          namespace=~"$namespace",
-          pod=~"$vpa-.*",
-          container=~"$container",
-          container!=""
-        }
-      ) by (%(clusterLabel)s, container)
-    ||| % $._config,
-    local vpaCpuRequestOverTimeQuery = |||
-      max(
-        kube_pod_container_resource_requests{
-          %(clusterLabel)s=~"$cluster",
-          job=~"$job",
-          namespace=~"$namespace",
-          pod=~"$vpa-.*",
-          resource=~"cpu",
-          container=~"$container"
-        }
-      ) by (%(clusterLabel)s, container)
-    ||| % $._config,
-    local vpaCpuLimitOverTimeQuery = std.strReplace(vpaCpuRequestOverTimeQuery, 'requests', 'limits'),
+        local variables = [
+          defaultVariables.datasource,
+          defaultVariables.cluster,
+          defaultVariables.namespace,
+          vpaVar,
+          containerVar,
+        ];
 
-    local clusterInLegend(str) = if $._config.vpa.clusterAggregation then '{{cluster}} - ' + str else str,
+        local queries = {
+          cpuRecommendationTarget: |||
+            max(
+              kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{
+                cluster=~"$cluster",
+                namespace=~"$namespace",
+                resource="cpu"
+              }
+            ) by (job, cluster, namespace, verticalpodautoscaler, container, resource)
+          |||,
 
-    local vpaCpuRecommendationOverTimeTimeSeriesPanel =
-      timeSeriesPanel.new(
-        'VPA CPU Recommendations Over Time',
-      ) +
-      tsQueryOptions.withTargets(
-        [
-          prometheus.new(
-            '$datasource',
-            vpaCpuRecommendationLowerBoundOverTimeQuery,
-          ) +
-          prometheus.withLegendFormat(
-            clusterInLegend('Lower Bound')
-          ),
-          prometheus.new(
-            '$datasource',
-            vpaCpuRecommendationTargetOverTimeQuery,
-          ) +
-          prometheus.withLegendFormat(
-            clusterInLegend('Target')
-          ),
-          prometheus.new(
-            '$datasource',
-            vpaCpuRecommendationUpperBoundOverTimeQuery,
-          ) +
-          prometheus.withLegendFormat(
-            clusterInLegend('Upper Bound')
-          ),
-          prometheus.new(
-            '$datasource',
-            vpaCpuUsageOverTimeQuery,
-          ) +
-          prometheus.withLegendFormat(
-            clusterInLegend('Usage')
-          ),
-          prometheus.new(
-            '$datasource',
-            vpaCpuRequestOverTimeQuery,
-          ) +
-          prometheus.withLegendFormat(
-            clusterInLegend('Requests')
-          ),
-          prometheus.new(
-            '$datasource',
-            vpaCpuLimitOverTimeQuery,
-          ) +
-          prometheus.withLegendFormat(
-            clusterInLegend('Limits')
-          ),
-        ]
-      ) +
-      tsStandardOptions.withUnit('short') +
-      tsOptions.tooltip.withMode('multi') +
-      tsOptions.tooltip.withSort('desc') +
-      tsLegend.withShowLegend(true) +
-      tsLegend.withDisplayMode('table') +
-      tsLegend.withPlacement('right') +
-      tsLegend.withCalcs(['lastNotNull', 'mean', 'max']) +
-      tsLegend.withSortBy('Mean') +
-      tsLegend.withSortDesc(true) +
-      tsCustom.withSpanNulls(false),
+          cpuRecommendationLowerBound: |||
+            max(
+              kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{
+                cluster=~"$cluster",
+                namespace=~"$namespace",
+                resource="cpu"
+              }
+            ) by (job, cluster, namespace, verticalpodautoscaler, container, resource)
+          |||,
 
-    local vpaMemoryRecommendationTargetOverTimeQuery = std.strReplace(vpaCpuRecommendationTargetOverTimeQuery, 'cpu', 'memory'),
-    local vpaMemoryRecommendationLowerBoundOverTimeQuery = std.strReplace(vpaMemoryRecommendationTargetOverTimeQuery, 'target', 'lowerbound'),
-    local vpaMemoryRecommendationUpperBoundOverTimeQuery = std.strReplace(vpaMemoryRecommendationTargetOverTimeQuery, 'target', 'upperbound'),
-    local vpaMemoryUsageOverTimeQuery = |||
-      avg(
-        container_memory_working_set_bytes{
-          %(clusterLabel)s=~"$cluster",
-          namespace=~"$namespace",
-          pod=~"$vpa-.*",
-          container=~"$container"
-        }
-      ) by (%(clusterLabel)s, container)
-    ||| % $._config,
-    local vpaMemoryRequestOverTimeQuery = std.strReplace(vpaCpuRequestOverTimeQuery, 'cpu', 'memory'),
-    local vpaMemoryLimitOverTimeQuery = std.strReplace(vpaMemoryRequestOverTimeQuery, 'requests', 'limits'),
+          cpuRecommendationUpperBound: |||
+            max(
+              kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{
+                cluster=~"$cluster",
+                namespace=~"$namespace",
+                resource="cpu"
+              }
+            ) by (job, cluster, namespace, verticalpodautoscaler, container, resource)
+          |||,
 
-    local vpaMemoryRecommendationOverTimeTimeSeriesPanel =
-      timeSeriesPanel.new(
-        'VPA Memory Recommendations Over Time',
-      ) +
-      tsQueryOptions.withTargets(
-        [
-          prometheus.new(
-            '$datasource',
-            vpaMemoryRecommendationLowerBoundOverTimeQuery,
-          ) +
-          prometheus.withLegendFormat(
-            clusterInLegend('Lower Bound')
-          ),
-          prometheus.new(
-            '$datasource',
-            vpaMemoryRecommendationTargetOverTimeQuery,
-          ) +
-          prometheus.withLegendFormat(
-            clusterInLegend('Target')
-          ),
-          prometheus.new(
-            '$datasource',
-            vpaMemoryRecommendationUpperBoundOverTimeQuery,
-          ) +
-          prometheus.withLegendFormat(
-            clusterInLegend('Upper Bound')
-          ),
-          prometheus.new(
-            '$datasource',
-            vpaMemoryUsageOverTimeQuery,
-          ) +
-          prometheus.withLegendFormat(
-            clusterInLegend('Usage')
-          ),
-          prometheus.new(
-            '$datasource',
-            vpaMemoryRequestOverTimeQuery,
-          ) +
-          prometheus.withLegendFormat(
-            clusterInLegend('Requests')
-          ),
-          prometheus.new(
-            '$datasource',
-            vpaMemoryLimitOverTimeQuery,
-          ) +
-          prometheus.withLegendFormat(
-            clusterInLegend('Limits')
-          ),
-        ]
-      ) +
-      tsStandardOptions.withUnit('bytes') +
-      tsOptions.tooltip.withMode('multi') +
-      tsOptions.tooltip.withSort('desc') +
-      tsLegend.withShowLegend(true) +
-      tsLegend.withDisplayMode('table') +
-      tsLegend.withPlacement('right') +
-      tsLegend.withCalcs(['lastNotNull', 'mean', 'max']) +
-      tsLegend.withSortBy('Mean') +
-      tsLegend.withSortDesc(true) +
-      tsCustom.withSpanNulls(false),
+          memoryRecommendationTarget: |||
+            max(
+              kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{
+                cluster=~"$cluster",
+                namespace=~"$namespace",
+                resource="memory"
+              }
+            ) by (job, cluster, namespace, verticalpodautoscaler, container, resource)
+          |||,
 
-    local vpaCpuGuaranteedQosStatPanel =
-      statPanel.new(
-        'CPU Guaranteed QoS',
-      ) +
-      stQueryOptions.withTargets([
-        prometheus.new(
-          '$datasource',
-          vpaCpuRecommendationTargetOverTimeQuery
-        ) +
-        prometheus.withLegendFormat(
-          clusterInLegend('CPU Requests')
-        ),
-        prometheus.new(
-          '$datasource',
-          vpaCpuRecommendationTargetOverTimeQuery
-        ) +
-        prometheus.withLegendFormat(
-          clusterInLegend('CPU Limits')
-        ),
-      ]) +
-      stStandardOptions.withUnit('short') +
-      stOptions.reduceOptions.withCalcs(['lastNotNull']) +
-      stStandardOptions.thresholds.withSteps([
-        stStandardOptions.threshold.step.withValue(0) +
-        stStandardOptions.threshold.step.withColor('yellow'),
-      ]),
+          memoryRecommendationLowerBound: |||
+            max(
+              kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{
+                cluster=~"$cluster",
+                namespace=~"$namespace",
+                resource="memory"
+              }
+            ) by (job, cluster, namespace, verticalpodautoscaler, container, resource)
+          |||,
 
-    local vpaCpuBurstableQosStatPanel =
-      statPanel.new(
-        'CPU Burstable QoS',
-      ) +
-      stQueryOptions.withTargets([
-        prometheus.new(
-          '$datasource',
-          vpaCpuRecommendationLowerBoundOverTimeQuery
-        ) +
-        prometheus.withLegendFormat(
-          clusterInLegend('CPU Requests')
-        ),
-        prometheus.new(
-          '$datasource',
-          vpaCpuRecommendationUpperBoundOverTimeQuery
-        ) +
-        prometheus.withLegendFormat(
-          clusterInLegend('CPU Limits')
-        ),
-      ]) +
-      stStandardOptions.withUnit('short') +
-      stOptions.reduceOptions.withCalcs(['lastNotNull']) +
-      stStandardOptions.withOverrides([
-        stOverride.byName.new('CPU Requests') +
-        stOverride.byName.withPropertiesFromOptions(
-          stStandardOptions.color.withMode('fixed') +
-          stStandardOptions.color.withFixedColor('red')
-        ),
-        stOverride.byName.new('CPU Limits') +
-        stOverride.byName.withPropertiesFromOptions(
-          stStandardOptions.color.withMode('fixed') +
-          stStandardOptions.color.withFixedColor('green')
-        ),
-      ]),
+          memoryRecommendationUpperBound: |||
+            max(
+              kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{
+                cluster=~"$cluster",
+                namespace=~"$namespace",
+                resource="memory"
+              }
+            ) by (job, cluster, namespace, verticalpodautoscaler, container, resource)
+          |||,
 
-    local vpaMemoryGuaranteedQosStatPanel =
-      statPanel.new(
-        'Memory Guaranteed QoS',
-      ) +
-      stQueryOptions.withTargets([
-        prometheus.new(
-          '$datasource',
-          vpaMemoryRecommendationTargetOverTimeQuery
-        ) +
-        prometheus.withLegendFormat(
-          clusterInLegend('Memory Requests')
-        ),
-        prometheus.new(
-          '$datasource',
-          vpaMemoryRecommendationTargetOverTimeQuery
-        ) +
-        prometheus.withLegendFormat(
-          clusterInLegend('Memory Limits')
-        ),
-      ]) +
-      stStandardOptions.withUnit('bytes') +
-      stOptions.reduceOptions.withCalcs(['lastNotNull']) +
-      stStandardOptions.thresholds.withSteps([
-        stStandardOptions.threshold.step.withValue(0) +
-        stStandardOptions.threshold.step.withColor('yellow'),
-      ]),
+          cpuRecommendationTargetOverTime: |||
+            max(
+              kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{
+                cluster=~"$cluster",
+                namespace=~"$namespace",
+                resource="cpu",
+                verticalpodautoscaler=~"$vpa",
+                container=~"$container"
+              }
+            ) by (cluster, job, namespace, verticalpodautoscaler, container, resource)
+          |||,
 
-    local vpaMemoryBurstableQosStatPanel =
-      statPanel.new(
-        'Memory Burstable QoS',
-      ) +
-      stQueryOptions.withTargets([
-        prometheus.new(
-          '$datasource',
-          vpaMemoryRecommendationLowerBoundOverTimeQuery
-        ) +
-        prometheus.withLegendFormat(
-          clusterInLegend('Memory Requests')
-        ),
-        prometheus.new(
-          '$datasource',
-          vpaMemoryRecommendationUpperBoundOverTimeQuery
-        ) +
-        prometheus.withLegendFormat(
-          clusterInLegend('Memory Limits')
-        ),
-      ]) +
-      stStandardOptions.withUnit('bytes') +
-      stOptions.reduceOptions.withCalcs(['lastNotNull']) +
-      stStandardOptions.withOverrides([
-        stOverride.byName.new('Memory Requests') +
-        stOverride.byName.withPropertiesFromOptions(
-          stStandardOptions.color.withMode('fixed') +
-          stStandardOptions.color.withFixedColor('red')
-        ),
-        stOverride.byName.new('Memory Limits') +
-        stOverride.byName.withPropertiesFromOptions(
-          stStandardOptions.color.withMode('fixed') +
-          stStandardOptions.color.withFixedColor('green')
-        ),
-      ]),
+          cpuRecommendationLowerBoundOverTime: |||
+            max(
+              kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{
+                cluster=~"$cluster",
+                namespace=~"$namespace",
+                resource="cpu",
+                verticalpodautoscaler=~"$vpa",
+                container=~"$container"
+              }
+            ) by (cluster, job, namespace, verticalpodautoscaler, container, resource)
+          |||,
 
-    local vpaNamespaceSummaryRow =
-      row.new(
-        title='Namespace $namespace Summary',
-      ),
+          cpuRecommendationUpperBoundOverTime: |||
+            max(
+              kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{
+                cluster=~"$cluster",
+                namespace=~"$namespace",
+                resource="cpu",
+                verticalpodautoscaler=~"$vpa",
+                container=~"$container"
+              }
+            ) by (cluster, job, namespace, verticalpodautoscaler, container, resource)
+          |||,
 
-    local vpaSummaryRow =
-      row.new(
-        title='$vpa / $container Summary',
-      ) +
-      row.withRepeat('container'),
+          memoryRecommendationTargetOverTime: |||
+            max(
+              kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{
+                cluster=~"$cluster",
+                namespace=~"$namespace",
+                resource="memory",
+                verticalpodautoscaler=~"$vpa",
+                container=~"$container"
+              }
+            ) by (cluster, job, namespace, verticalpodautoscaler, container, resource)
+          |||,
 
-    'kubernetes-autoscaling-mixin-vpa.json': if $._config.vpa.enabled then
-      $._config.bypassDashboardValidation +
-      dashboard.new(
-        'Kubernetes / Autoscaling / Vertical Pod Autoscaler',
-      ) +
-      dashboard.withDescription('A dashboard that monitors Kubernetes and focuses on giving a overview for vertical pod autoscalers. It is created using the [Kubernetes / Autoscaling-mixin](https://github.com/adinhodovic/kubernetes-autoscaling-mixin).') +
-      dashboard.withUid($._config.vpaDashboardUid) +
-      dashboard.withTags($._config.tags + ['kubernetes-core']) +
-      dashboard.withTimezone('utc') +
-      dashboard.withEditable(true) +
-      dashboard.time.withFrom('now-6h') +
-      dashboard.time.withTo('now') +
-      dashboard.withVariables(variables) +
-      dashboard.withLinks(
-        [
-          dashboard.link.dashboards.new('Kubernetes / Autoscaling', $._config.tags) +
-          dashboard.link.link.options.withTargetBlank(true) +
-          dashboard.link.link.options.withAsDropdown(true) +
-          dashboard.link.link.options.withIncludeVars(true) +
-          dashboard.link.link.options.withKeepTime(true),
-        ]
-      ) +
-      dashboard.withPanels(
-        [
-          vpaNamespaceSummaryRow +
-          row.gridPos.withX(0) +
-          row.gridPos.withY(0) +
-          row.gridPos.withW(24) +
-          row.gridPos.withH(1),
-        ] +
-        [
-          vpaCpuResourceTable +
-          tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(1) +
-          tablePanel.gridPos.withW(24) +
-          tablePanel.gridPos.withH(8),
-          vpaMemoryResourceTable +
-          tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(9) +
-          tablePanel.gridPos.withW(24) +
-          tablePanel.gridPos.withH(8),
-          vpaSummaryRow +
-          row.gridPos.withX(0) +
-          row.gridPos.withY(17) +
-          row.gridPos.withW(24) +
-          row.gridPos.withH(1),
-        ] +
-        grid.makeGrid(
+          memoryRecommendationLowerBoundOverTime: |||
+            max(
+              kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{
+                cluster=~"$cluster",
+                namespace=~"$namespace",
+                resource="memory",
+                verticalpodautoscaler=~"$vpa",
+                container=~"$container"
+              }
+            ) by (cluster, job, namespace, verticalpodautoscaler, container, resource)
+          |||,
+
+          memoryRecommendationUpperBoundOverTime: |||
+            max(
+              kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{
+                cluster=~"$cluster",
+                namespace=~"$namespace",
+                resource="memory",
+                verticalpodautoscaler=~"$vpa",
+                container=~"$container"
+              }
+            ) by (cluster, job, namespace, verticalpodautoscaler, container, resource)
+          |||,
+        };
+
+        local panels = {
+          cpuRecommendationTargetTable:
+            mixinUtils.dashboards.tablePanel(
+              'CPU Recommendation Target',
+              'short',
+              queries.cpuRecommendationTarget,
+              description='CPU target recommendations for VPAs.',
+            ),
+
+          cpuRecommendationBoundsTable:
+            mixinUtils.dashboards.tablePanel(
+              'CPU Recommendation Bounds',
+              'short',
+              [
+                {
+                  expr: queries.cpuRecommendationLowerBound,
+                  legend: 'Lower Bound',
+                },
+                {
+                  expr: queries.cpuRecommendationUpperBound,
+                  legend: 'Upper Bound',
+                },
+              ],
+              description='CPU recommendation bounds for VPAs.',
+            ),
+
+          memoryRecommendationTargetTable:
+            mixinUtils.dashboards.tablePanel(
+              'Memory Recommendation Target',
+              'bytes',
+              queries.memoryRecommendationTarget,
+              description='Memory target recommendations for VPAs.',
+            ),
+
+          memoryRecommendationBoundsTable:
+            mixinUtils.dashboards.tablePanel(
+              'Memory Recommendation Bounds',
+              'bytes',
+              [
+                {
+                  expr: queries.memoryRecommendationLowerBound,
+                  legend: 'Lower Bound',
+                },
+                {
+                  expr: queries.memoryRecommendationUpperBound,
+                  legend: 'Upper Bound',
+                },
+              ],
+              description='Memory recommendation bounds for VPAs.',
+            ),
+
+          cpuRecommendationOverTime:
+            mixinUtils.dashboards.timeSeriesPanel(
+              'CPU Recommendations Over Time',
+              'short',
+              [
+                {
+                  expr: queries.cpuRecommendationTargetOverTime,
+                  legend: '{{ verticalpodautoscaler }} / {{ container }} - Target',
+                },
+                {
+                  expr: queries.cpuRecommendationLowerBoundOverTime,
+                  legend: '{{ verticalpodautoscaler }} / {{ container }} - Lower',
+                },
+                {
+                  expr: queries.cpuRecommendationUpperBoundOverTime,
+                  legend: '{{ verticalpodautoscaler }} / {{ container }} - Upper',
+                },
+              ],
+              calcs=['lastNotNull', 'mean', 'max'],
+              description='CPU recommendations over time for selected VPAs.',
+            ),
+
+          memoryRecommendationOverTime:
+            mixinUtils.dashboards.timeSeriesPanel(
+              'Memory Recommendations Over Time',
+              'bytes',
+              [
+                {
+                  expr: queries.memoryRecommendationTargetOverTime,
+                  legend: '{{ verticalpodautoscaler }} / {{ container }} - Target',
+                },
+                {
+                  expr: queries.memoryRecommendationLowerBoundOverTime,
+                  legend: '{{ verticalpodautoscaler }} / {{ container }} - Lower',
+                },
+                {
+                  expr: queries.memoryRecommendationUpperBoundOverTime,
+                  legend: '{{ verticalpodautoscaler }} / {{ container }} - Upper',
+                },
+              ],
+              calcs=['lastNotNull', 'mean', 'max'],
+              description='Memory recommendations over time for selected VPAs.',
+            ),
+        };
+
+        local rows =
           [
-            vpaCpuGuaranteedQosStatPanel,
-            vpaCpuBurstableQosStatPanel,
-            vpaMemoryGuaranteedQosStatPanel,
-            vpaMemoryBurstableQosStatPanel,
-          ],
-          panelWidth=6,
-          panelHeight=6,
-          startY=18
+            row.new('CPU Recommendations') +
+            row.gridPos.withX(0) +
+            row.gridPos.withY(0) +
+            row.gridPos.withW(24) +
+            row.gridPos.withH(1),
+            panels.cpuRecommendationTargetTable +
+            tablePanel.gridPos.withX(0) +
+            tablePanel.gridPos.withY(1) +
+            tablePanel.gridPos.withW(12) +
+            tablePanel.gridPos.withH(8),
+            panels.cpuRecommendationBoundsTable +
+            tablePanel.gridPos.withX(12) +
+            tablePanel.gridPos.withY(1) +
+            tablePanel.gridPos.withW(12) +
+            tablePanel.gridPos.withH(8),
+            row.new('Memory Recommendations') +
+            row.gridPos.withX(0) +
+            row.gridPos.withY(9) +
+            row.gridPos.withW(24) +
+            row.gridPos.withH(1),
+            panels.memoryRecommendationTargetTable +
+            tablePanel.gridPos.withX(0) +
+            tablePanel.gridPos.withY(10) +
+            tablePanel.gridPos.withW(12) +
+            tablePanel.gridPos.withH(8),
+            panels.memoryRecommendationBoundsTable +
+            tablePanel.gridPos.withX(12) +
+            tablePanel.gridPos.withY(10) +
+            tablePanel.gridPos.withW(12) +
+            tablePanel.gridPos.withH(8),
+            row.new('Recommendations Over Time') +
+            row.gridPos.withX(0) +
+            row.gridPos.withY(18) +
+            row.gridPos.withW(24) +
+            row.gridPos.withH(1),
+          ] +
+          grid.makeGrid(
+            [
+              panels.cpuRecommendationOverTime,
+              panels.memoryRecommendationOverTime,
+            ],
+            panelWidth=12,
+            panelHeight=8,
+            startY=19
+          );
+
+        mixinUtils.dashboards.bypassDashboardValidation +
+        dashboard.new(
+          'Kubernetes / Autoscaling / VPA',
         ) +
-        grid.makeGrid(
-          [
-            vpaCpuRecommendationOverTimeTimeSeriesPanel,
-            vpaMemoryRecommendationOverTimeTimeSeriesPanel,
-          ],
-          panelWidth=12,
-          panelHeight=8,
-          startY=26
-        ),
-      ) +
-      if $._config.annotation.enabled then
-        dashboard.withAnnotations($._config.customAnnotation)
-      else {},
-  }) + if $._config.vpa.enabled then {
-    'kubernetes-autoscaling-mixin-vpa.json'+: $._config.bypassDashboardValidation,
-  } else {},
+        dashboard.withDescription('A dashboard that monitors Vertical Pod Autoscalers. %s' % mixinUtils.dashboards.dashboardDescriptionLink('kubernetes-autoscaling-mixin', 'https://github.com/adinhodovic/kubernetes-autoscaling-mixin')) +
+        dashboard.withUid($._config.vpaDashboardUid) +
+        dashboard.withTags($._config.tags + ['vpa']) +
+        dashboard.withTimezone('utc') +
+        dashboard.withEditable(true) +
+        dashboard.time.withFrom('now-6h') +
+        dashboard.time.withTo('now') +
+        dashboard.withVariables(variables) +
+        dashboard.withLinks(
+          mixinUtils.dashboards.dashboardLinks('Kubernetes / Autoscaling', $._config, dropdown=true)
+        ) +
+        dashboard.withPanels(rows),
+  },
 }
