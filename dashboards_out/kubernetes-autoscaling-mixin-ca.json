@@ -350,7 +350,7 @@
                      }
                   ]
                },
-               "unit": "dateTimeAsIso"
+               "unit": "s"
             }
          },
          "gridPos": {
@@ -372,7 +372,7 @@
                   "type": "prometheus",
                   "uid": "${datasource}"
                },
-               "expr": "max(\n  cluster_autoscaler_last_activity{\n    cluster=\"$cluster\", job=~\"$job\",\n    activity=\"scaleDown\"\n  }\n) * 1000\n"
+               "expr": "time() - max(\n  cluster_autoscaler_last_activity{\n    cluster=\"$cluster\", job=~\"$job\",\n    activity=\"scaleDown\"\n  }\n)\n"
             }
          ],
          "title": "Last Scale Down",
@@ -395,7 +395,7 @@
                      }
                   ]
                },
-               "unit": "dateTimeAsIso"
+               "unit": "s"
             }
          },
          "gridPos": {
@@ -417,7 +417,7 @@
                   "type": "prometheus",
                   "uid": "${datasource}"
                },
-               "expr": "max(\n  cluster_autoscaler_last_activity{\n    cluster=\"$cluster\", job=~\"$job\",\n    activity=\"scaleUp\"\n  }\n) * 1000\n"
+               "expr": "time() - max(\n  cluster_autoscaler_last_activity{\n    cluster=\"$cluster\", job=~\"$job\",\n    activity=\"scaleUp\"\n  }\n)\n"
             }
          ],
          "title": "Last Scale Up",
@@ -451,7 +451,7 @@
          },
          "gridPos": {
             "h": 8,
-            "w": 8,
+            "w": 12,
             "x": 0,
             "y": 6
          },
@@ -482,8 +482,8 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "round(\n  sum(\n    increase(\n      cluster_autoscaler_unschedulable_pods_count{\n        cluster=\"$cluster\", job=~\"$job\"\n      }[$__rate_interval]\n    )\n  )\n)\n",
-               "legendFormat": "Unschedulable"
+               "expr": "round(\n  sum(\n    increase(\n      cluster_autoscaler_unschedulable_pods_count{\n        cluster=\"$cluster\", job=~\"$job\"\n      }[$__rate_interval]\n    )\n  ) by (type)\n)\n",
+               "legendFormat": "{{ type }}"
             },
             {
                "datasource": {
@@ -491,8 +491,8 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "round(\n  sum(\n    increase(\n      cluster_autoscaler_evicted_pods_total{\n        cluster=\"$cluster\", job=~\"$job\"\n      }[$__rate_interval]\n    )\n  ) by (reason)\n)\n",
-               "legendFormat": "{{ reason }}"
+               "expr": "round(\n  sum(\n    increase(\n      cluster_autoscaler_evicted_pods_total{\n        cluster=\"$cluster\", job=~\"$job\"\n      }[$__rate_interval]\n    )\n  ) by (eviction_result)\n)\n",
+               "legendFormat": "Evicted / {{ eviction_result }}"
             }
          ],
          "title": "Pod Activity",
@@ -514,8 +514,8 @@
          },
          "gridPos": {
             "h": 8,
-            "w": 8,
-            "x": 8,
+            "w": 12,
+            "x": 12,
             "y": 6
          },
          "id": 12,
@@ -545,7 +545,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "round(\n  sum(\n    increase(\n      cluster_autoscaler_nodes_count{\n        cluster=\"$cluster\", job=~\"$job\"\n      }[$__rate_interval]\n    )\n  ) by (state)\n)\n",
+               "expr": "round(\n  sum(\n    cluster_autoscaler_nodes_count{\n      cluster=\"$cluster\", job=~\"$job\"\n    }\n  ) by (state)\n)\n",
                "legendFormat": "{{ state }}"
             }
          ],
@@ -568,9 +568,9 @@
          },
          "gridPos": {
             "h": 8,
-            "w": 8,
-            "x": 16,
-            "y": 6
+            "w": 24,
+            "x": 0,
+            "y": 14
          },
          "id": 13,
          "options": {
@@ -599,7 +599,16 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "round(\n  sum(\n    increase(\n      cluster_autoscaler_unneeded_nodes_count{\n        cluster=\"$cluster\", job=~\"$job\"\n      }[$__rate_interval]\n    )\n  )\n)\n",
+               "expr": "round(\n  sum(\n    cluster_autoscaler_nodes_count{\n      cluster=\"$cluster\", job=~\"$job\"\n    }\n  )\n)\n",
+               "legendFormat": "Total Nodes"
+            },
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "exemplar": false,
+               "expr": "round(\n  sum(\n    cluster_autoscaler_unneeded_nodes_count{\n      cluster=\"$cluster\", job=~\"$job\"\n    }\n  )\n)\n",
                "legendFormat": "Unneeded"
             },
             {

@@ -15,40 +15,40 @@ local tablePanel = g.panel.table;
       local defaultVariables = util.variables($._config);
 
       local hpaVar = g.dashboard.variable.query.new(
-        'hpa',
-        'label_values(kube_horizontalpodautoscaler_spec_target_metric{cluster="$cluster", namespace="$namespace"}, horizontalpodautoscaler)'
-      ) +
-      g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
-      g.dashboard.variable.query.withSort() +
-      g.dashboard.variable.query.generalOptions.withLabel('HPA') +
-      g.dashboard.variable.query.selectionOptions.withMulti(false) +
-      g.dashboard.variable.query.selectionOptions.withIncludeAll(false) +
-      g.dashboard.variable.query.refresh.onLoad() +
-      g.dashboard.variable.query.refresh.onTime();
+                       'hpa',
+                       'label_values(kube_horizontalpodautoscaler_spec_target_metric{cluster="$cluster", namespace="$namespace"}, horizontalpodautoscaler)'
+                     ) +
+                     g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
+                     g.dashboard.variable.query.withSort() +
+                     g.dashboard.variable.query.generalOptions.withLabel('HPA') +
+                     g.dashboard.variable.query.selectionOptions.withMulti(false) +
+                     g.dashboard.variable.query.selectionOptions.withIncludeAll(false) +
+                     g.dashboard.variable.query.refresh.onLoad() +
+                     g.dashboard.variable.query.refresh.onTime();
 
       local metricNameVar = g.dashboard.variable.query.new(
-        'metric_name',
-        'label_values(kube_horizontalpodautoscaler_spec_target_metric{cluster="$cluster", namespace="$namespace", horizontalpodautoscaler="$hpa"}, metric_name)'
-      ) +
-      g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
-      g.dashboard.variable.query.withSort() +
-      g.dashboard.variable.query.generalOptions.withLabel('Metric Name') +
-      g.dashboard.variable.query.selectionOptions.withMulti(true) +
-      g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
-      g.dashboard.variable.query.refresh.onLoad() +
-      g.dashboard.variable.query.refresh.onTime();
+                              'metric_name',
+                              'label_values(kube_horizontalpodautoscaler_spec_target_metric{cluster="$cluster", namespace="$namespace", horizontalpodautoscaler="$hpa"}, metric_name)'
+                            ) +
+                            g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
+                            g.dashboard.variable.query.withSort() +
+                            g.dashboard.variable.query.generalOptions.withLabel('Metric Name') +
+                            g.dashboard.variable.query.selectionOptions.withMulti(true) +
+                            g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
+                            g.dashboard.variable.query.refresh.onLoad() +
+                            g.dashboard.variable.query.refresh.onTime();
 
       local metricTargetTypeVar = g.dashboard.variable.query.new(
-        'metric_target_type',
-        'label_values(kube_horizontalpodautoscaler_spec_target_metric{cluster="$cluster", namespace="$namespace", horizontalpodautoscaler="$hpa", metric_name=~"$metric_name"}, metric_target_type)'
-      ) +
-      g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
-      g.dashboard.variable.query.withSort() +
-      g.dashboard.variable.query.generalOptions.withLabel('Metric Target Type') +
-      g.dashboard.variable.query.selectionOptions.withMulti(true) +
-      g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
-      g.dashboard.variable.query.refresh.onLoad() +
-      g.dashboard.variable.query.refresh.onTime();
+                                    'metric_target_type',
+                                    'label_values(kube_horizontalpodautoscaler_spec_target_metric{cluster="$cluster", namespace="$namespace", horizontalpodautoscaler="$hpa", metric_name=~"$metric_name"}, metric_target_type)'
+                                  ) +
+                                  g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
+                                  g.dashboard.variable.query.withSort() +
+                                  g.dashboard.variable.query.generalOptions.withLabel('Metric Target Type') +
+                                  g.dashboard.variable.query.selectionOptions.withMulti(true) +
+                                  g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
+                                  g.dashboard.variable.query.refresh.onLoad() +
+                                  g.dashboard.variable.query.refresh.onTime();
 
       local variables = [
         defaultVariables.datasource,

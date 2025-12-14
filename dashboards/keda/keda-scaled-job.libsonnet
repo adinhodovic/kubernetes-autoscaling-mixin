@@ -7,7 +7,6 @@ local row = g.panel.row;
 local grid = g.util.grid;
 
 local tablePanel = g.panel.table;
-local tbStandardOptions = tablePanel.standardOptions;
 
 {
   grafanaDashboards+:: {
@@ -17,64 +16,64 @@ local tbStandardOptions = tablePanel.standardOptions;
         local defaultVariables = util.variables($._config);
 
         local operatorNamespaceVar = g.dashboard.variable.query.new(
-          'operator_namespace',
-          'label_values(keda_scaled_job_errors_total{cluster="$cluster", job=~"$job"}, namespace)'
-        ) +
-        g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
-        g.dashboard.variable.query.withSort() +
-        g.dashboard.variable.query.generalOptions.withLabel('Operator Namespace') +
-        g.dashboard.variable.query.selectionOptions.withMulti(true) +
-        g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
-        g.dashboard.variable.query.refresh.onLoad() +
-        g.dashboard.variable.query.refresh.onTime();
+                                       'operator_namespace',
+                                       'label_values(keda_scaled_job_errors_total{cluster="$cluster", job=~"$job"}, namespace)'
+                                     ) +
+                                     g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
+                                     g.dashboard.variable.query.withSort() +
+                                     g.dashboard.variable.query.generalOptions.withLabel('Operator Namespace') +
+                                     g.dashboard.variable.query.selectionOptions.withMulti(true) +
+                                     g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
+                                     g.dashboard.variable.query.refresh.onLoad() +
+                                     g.dashboard.variable.query.refresh.onTime();
 
         local resourceNamespaceVar = g.dashboard.variable.query.new(
-          'resource_namespace',
-          'label_values(keda_scaled_job_errors_total{cluster="$cluster", job=~"$job", namespace=~"$operator_namespace"}, exported_namespace)'
-        ) +
-        g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
-        g.dashboard.variable.query.withSort() +
-        g.dashboard.variable.query.generalOptions.withLabel('Resource Namespace') +
-        g.dashboard.variable.query.selectionOptions.withMulti(true) +
-        g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
-        g.dashboard.variable.query.refresh.onLoad() +
-        g.dashboard.variable.query.refresh.onTime();
+                                       'resource_namespace',
+                                       'label_values(keda_scaled_job_errors_total{cluster="$cluster", job=~"$job", namespace=~"$operator_namespace"}, exported_namespace)'
+                                     ) +
+                                     g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
+                                     g.dashboard.variable.query.withSort() +
+                                     g.dashboard.variable.query.generalOptions.withLabel('Resource Namespace') +
+                                     g.dashboard.variable.query.selectionOptions.withMulti(true) +
+                                     g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
+                                     g.dashboard.variable.query.refresh.onLoad() +
+                                     g.dashboard.variable.query.refresh.onTime();
 
         local scaledJobVar = g.dashboard.variable.query.new(
-          'scaled_job',
-          'label_values(keda_scaled_job_errors_total{cluster="$cluster", job=~"$job", namespace=~"$operator_namespace", exported_namespace=~"$resource_namespace"}, scaledJob)'
-        ) +
-        g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
-        g.dashboard.variable.query.withSort() +
-        g.dashboard.variable.query.generalOptions.withLabel('Scaled Job') +
-        g.dashboard.variable.query.selectionOptions.withMulti(false) +
-        g.dashboard.variable.query.selectionOptions.withIncludeAll(false) +
-        g.dashboard.variable.query.refresh.onLoad() +
-        g.dashboard.variable.query.refresh.onTime();
+                               'scaled_job',
+                               'label_values(keda_scaled_job_errors_total{cluster="$cluster", job=~"$job", namespace=~"$operator_namespace", exported_namespace=~"$resource_namespace"}, scaledJob)'
+                             ) +
+                             g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
+                             g.dashboard.variable.query.withSort() +
+                             g.dashboard.variable.query.generalOptions.withLabel('Scaled Job') +
+                             g.dashboard.variable.query.selectionOptions.withMulti(false) +
+                             g.dashboard.variable.query.selectionOptions.withIncludeAll(false) +
+                             g.dashboard.variable.query.refresh.onLoad() +
+                             g.dashboard.variable.query.refresh.onTime();
 
         local scalerVar = g.dashboard.variable.query.new(
-          'scaler',
-          'label_values(keda_scaler_active{cluster="$cluster", job=~"$job", namespace=~"$operator_namespace", exported_namespace="$resource_namespace", type="scaledjob", scaledObject="$scaled_job"}, scaler)'
-        ) +
-        g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
-        g.dashboard.variable.query.withSort() +
-        g.dashboard.variable.query.generalOptions.withLabel('Scaler') +
-        g.dashboard.variable.query.selectionOptions.withMulti(false) +
-        g.dashboard.variable.query.selectionOptions.withIncludeAll(false) +
-        g.dashboard.variable.query.refresh.onLoad() +
-        g.dashboard.variable.query.refresh.onTime();
+                            'scaler',
+                            'label_values(keda_scaler_active{cluster="$cluster", job=~"$job", namespace=~"$operator_namespace", exported_namespace="$resource_namespace", type="scaledjob", scaledObject="$scaled_job"}, scaler)'
+                          ) +
+                          g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
+                          g.dashboard.variable.query.withSort() +
+                          g.dashboard.variable.query.generalOptions.withLabel('Scaler') +
+                          g.dashboard.variable.query.selectionOptions.withMulti(false) +
+                          g.dashboard.variable.query.selectionOptions.withIncludeAll(false) +
+                          g.dashboard.variable.query.refresh.onLoad() +
+                          g.dashboard.variable.query.refresh.onTime();
 
         local metricVar = g.dashboard.variable.query.new(
-          'metric',
-          'label_values(keda_scaler_active{cluster="$cluster", job=~"$job", namespace=~"$operator_namespace", exported_namespace="$resource_namespace", type="scaledjob", scaledObject=~"$scaled_job", scaler=~"$scaler"}, metric)'
-        ) +
-        g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
-        g.dashboard.variable.query.withSort() +
-        g.dashboard.variable.query.generalOptions.withLabel('Metric') +
-        g.dashboard.variable.query.selectionOptions.withMulti(false) +
-        g.dashboard.variable.query.selectionOptions.withIncludeAll(false) +
-        g.dashboard.variable.query.refresh.onLoad() +
-        g.dashboard.variable.query.refresh.onTime();
+                            'metric',
+                            'label_values(keda_scaler_active{cluster="$cluster", job=~"$job", namespace=~"$operator_namespace", exported_namespace="$resource_namespace", type="scaledjob", scaledObject=~"$scaled_job", scaler=~"$scaler"}, metric)'
+                          ) +
+                          g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
+                          g.dashboard.variable.query.withSort() +
+                          g.dashboard.variable.query.generalOptions.withLabel('Metric') +
+                          g.dashboard.variable.query.selectionOptions.withMulti(false) +
+                          g.dashboard.variable.query.selectionOptions.withIncludeAll(false) +
+                          g.dashboard.variable.query.refresh.onLoad() +
+                          g.dashboard.variable.query.refresh.onTime();
 
         local variables = [
           defaultVariables.datasource,

@@ -12,7 +12,7 @@ local stStandardOptions = stat.standardOptions;
 
 {
   grafanaDashboards+:: {
-    ['kubernetes-autoscaling-mixin-karpenter-perf.json']:
+    'kubernetes-autoscaling-mixin-karpenter-perf.json':
       if !$._config.karpenter.enabled then {} else
 
         local defaultVariables = util.variables($._config);
@@ -578,4 +578,3 @@ local stStandardOptions = stat.standardOptions;
         ),
   },
 }
-

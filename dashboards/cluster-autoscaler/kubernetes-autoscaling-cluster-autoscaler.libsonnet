@@ -90,21 +90,21 @@ local gaStandardOptions = gauge.standardOptions;
           ||| % defaultFilters,
 
           lastScaleDown: |||
-            max(
+            time() - max(
               cluster_autoscaler_last_activity{
                 %(base)s,
                 activity="scaleDown"
               }
-            ) * 1000
+            )
           ||| % defaultFilters,
 
           lastScaleUp: |||
-            max(
+            time() - max(
               cluster_autoscaler_last_activity{
                 %(base)s,
                 activity="scaleUp"
               }
-            ) * 1000
+            )
           ||| % defaultFilters,
 
           unschedulablePods: |||
@@ -115,7 +115,7 @@ local gaStandardOptions = gauge.standardOptions;
                     %(base)s
                   }[$__rate_interval]
                 )
-              )
+              ) by (type)
             )
           ||| % defaultFilters,
 
@@ -127,18 +127,16 @@ local gaStandardOptions = gauge.standardOptions;
                     %(base)s
                   }[$__rate_interval]
                 )
-              ) by (reason)
+              ) by (eviction_result)
             )
           ||| % defaultFilters,
 
           nodeActivity: |||
             round(
               sum(
-                increase(
-                  cluster_autoscaler_nodes_count{
-                    %(base)s
-                  }[$__rate_interval]
-                )
+                cluster_autoscaler_nodes_count{
+                  %(base)s
+                }
               ) by (state)
             )
           ||| % defaultFilters,
@@ -146,11 +144,9 @@ local gaStandardOptions = gauge.standardOptions;
           unneededNodes: |||
             round(
               sum(
-                increase(
-                  cluster_autoscaler_unneeded_nodes_count{
-                    %(base)s
-                  }[$__rate_interval]
-                )
+                cluster_autoscaler_unneeded_nodes_count{
+                  %(base)s
+                }
               )
             )
           ||| % defaultFilters,
@@ -258,7 +254,7 @@ local gaStandardOptions = gauge.standardOptions;
           lastScaleDown:
             mixinUtils.dashboards.statPanel(
               'Last Scale Down',
-              'dateTimeAsIso',
+              's',
               queries.lastScaleDown,
               description='The timestamp of the last scale down activity.',
             ),
@@ -266,7 +262,7 @@ local gaStandardOptions = gauge.standardOptions;
           lastScaleUp:
             mixinUtils.dashboards.statPanel(
               'Last Scale Up',
-              'dateTimeAsIso',
+              's',
               queries.lastScaleUp,
               description='The timestamp of the last scale up activity.',
             ),
@@ -278,11 +274,11 @@ local gaStandardOptions = gauge.standardOptions;
               [
                 {
                   expr: queries.unschedulablePods,
-                  legend: 'Unschedulable',
+                  legend: '{{ type }}',
                 },
                 {
                   expr: queries.evictedPods,
-                  legend: '{{ reason }}',
+                  legend: 'Evicted / {{ eviction_result }}',
                 },
               ],
               calcs=['lastNotNull', 'mean', 'max'],
@@ -304,6 +300,10 @@ local gaStandardOptions = gauge.standardOptions;
               'Autoscaling Activity',
               'short',
               [
+                {
+                  expr: queries.totalNodes,
+                  legend: 'Total Nodes',
+                },
                 {
                   expr: queries.unneededNodes,
                   legend: 'Unneeded',
@@ -356,11 +356,18 @@ local gaStandardOptions = gauge.standardOptions;
             [
               panels.podActivity,
               panels.nodeActivity,
-              panels.autoscalingActivity,
             ],
-            panelWidth=8,
+            panelWidth=12,
             panelHeight=8,
             startY=6
+          ) +
+          grid.makeGrid(
+            [
+              panels.autoscalingActivity,
+            ],
+            panelWidth=24,
+            panelHeight=8,
+            startY=14
           );
 
         mixinUtils.dashboards.bypassDashboardValidation +

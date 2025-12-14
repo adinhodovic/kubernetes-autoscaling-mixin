@@ -16,28 +16,28 @@ local tablePanel = g.panel.table;
         local defaultVariables = util.variables($._config);
 
         local vpaVar = g.dashboard.variable.query.new(
-          'vpa',
-          'label_values(kube_customresource_verticalpodautoscaler_labels{cluster=~"$cluster", namespace=~"$namespace"}, verticalpodautoscaler)'
-        ) +
-        g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
-        g.dashboard.variable.query.withSort() +
-        g.dashboard.variable.query.generalOptions.withLabel('VPA') +
-        g.dashboard.variable.query.selectionOptions.withMulti(true) +
-        g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
-        g.dashboard.variable.query.refresh.onLoad() +
-        g.dashboard.variable.query.refresh.onTime();
+                         'vpa',
+                         'label_values(kube_customresource_verticalpodautoscaler_labels{cluster=~"$cluster", namespace=~"$namespace"}, verticalpodautoscaler)'
+                       ) +
+                       g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
+                       g.dashboard.variable.query.withSort() +
+                       g.dashboard.variable.query.generalOptions.withLabel('VPA') +
+                       g.dashboard.variable.query.selectionOptions.withMulti(true) +
+                       g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
+                       g.dashboard.variable.query.refresh.onLoad() +
+                       g.dashboard.variable.query.refresh.onTime();
 
         local containerVar = g.dashboard.variable.query.new(
-          'container',
-          'label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{cluster=~"$cluster", namespace=~"$namespace", verticalpodautoscaler=~"$vpa"}, container)'
-        ) +
-        g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
-        g.dashboard.variable.query.withSort() +
-        g.dashboard.variable.query.generalOptions.withLabel('Container') +
-        g.dashboard.variable.query.selectionOptions.withMulti(true) +
-        g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
-        g.dashboard.variable.query.refresh.onLoad() +
-        g.dashboard.variable.query.refresh.onTime();
+                               'container',
+                               'label_values(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{cluster=~"$cluster", namespace=~"$namespace", verticalpodautoscaler=~"$vpa"}, container)'
+                             ) +
+                             g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
+                             g.dashboard.variable.query.withSort() +
+                             g.dashboard.variable.query.generalOptions.withLabel('Container') +
+                             g.dashboard.variable.query.selectionOptions.withMulti(true) +
+                             g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
+                             g.dashboard.variable.query.refresh.onLoad() +
+                             g.dashboard.variable.query.refresh.onTime();
 
         local variables = [
           defaultVariables.datasource,

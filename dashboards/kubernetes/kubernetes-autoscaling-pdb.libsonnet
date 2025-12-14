@@ -13,16 +13,16 @@ local grid = g.util.grid;
       local defaultVariables = util.variables($._config);
 
       local pdbVar = g.dashboard.variable.query.new(
-        'pdb',
-        'label_values(kube_poddisruptionbudget_status_current_healthy{cluster="$cluster", namespace=~"$namespace"}, poddisruptionbudget)'
-      ) +
-      g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
-      g.dashboard.variable.query.withSort() +
-      g.dashboard.variable.query.generalOptions.withLabel('PDB') +
-      g.dashboard.variable.query.selectionOptions.withMulti(true) +
-      g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
-      g.dashboard.variable.query.refresh.onLoad() +
-      g.dashboard.variable.query.refresh.onTime();
+                       'pdb',
+                       'label_values(kube_poddisruptionbudget_status_current_healthy{cluster="$cluster", namespace=~"$namespace"}, poddisruptionbudget)'
+                     ) +
+                     g.dashboard.variable.query.withDatasourceFromVariable(defaultVariables.datasource) +
+                     g.dashboard.variable.query.withSort() +
+                     g.dashboard.variable.query.generalOptions.withLabel('PDB') +
+                     g.dashboard.variable.query.selectionOptions.withMulti(true) +
+                     g.dashboard.variable.query.selectionOptions.withIncludeAll(true) +
+                     g.dashboard.variable.query.refresh.onLoad() +
+                     g.dashboard.variable.query.refresh.onTime();
 
       local variables = [
         defaultVariables.datasource,

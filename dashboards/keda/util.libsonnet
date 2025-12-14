@@ -94,4 +94,3 @@ local query = variable.query;
       query.refresh.onTime(),
   },
 }
-
