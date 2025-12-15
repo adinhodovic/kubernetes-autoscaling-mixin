@@ -13,10 +13,9 @@ local tbStandardOptions = tablePanel.standardOptions;
 local tbQueryOptions = tablePanel.queryOptions;
 local tbOverride = tbStandardOptions.override;
 local tbFieldConfig = tablePanel.fieldConfig;
-local tbOptions = tablePanel.options;
 
 {
-  local dashboardName = 'karpenter-overview',
+  local dashboardName = 'karpenter-over',
   grafanaDashboards+:: {
     ['kubernetes-autoscaling-mixin-%s.json' % dashboardName]:
       if !$._config.karpenter.enabled then {} else
@@ -453,7 +452,7 @@ local tbOptions = tablePanel.options;
 
         local panels = {
           // Cluster Summary
-          clusterCpuUtilization:
+          clusterCpuUtilizationTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Cluster CPU Utilization',
               'short',
@@ -467,11 +466,11 @@ local tbOptions = tablePanel.options;
                   legend: 'Requested',
                 },
               ],
-              calcs=['lastNotNull', 'mean', 'max'],
               description='The total CPU allocatable and requested across all Karpenter nodes.',
+              fillOpacity=0,
             ),
 
-          clusterMemoryUtilization:
+          clusterMemoryUtilizationTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Cluster Memory Utilization',
               'bytes',
@@ -485,12 +484,12 @@ local tbOptions = tablePanel.options;
                   legend: 'Requested',
                 },
               ],
-              calcs=['lastNotNull', 'mean', 'max'],
-              description='The total memory allocatable and requested across all Karpenter nodes.',
+              description='The percentage of node pool usage relative to limits.',
+              fillOpacity=0,
             ),
 
           // Node Pool Summary
-          nodePools:
+          nodePoolsStat:
             mixinUtils.dashboards.statPanel(
               'Node Pools',
               'short',
@@ -498,7 +497,7 @@ local tbOptions = tablePanel.options;
               description='The total number of Karpenter node pools.',
             ),
 
-          nodesCount:
+          nodesCountStat:
             mixinUtils.dashboards.statPanel(
               'Nodes',
               'short',
@@ -506,114 +505,121 @@ local tbOptions = tablePanel.options;
               description='The total number of Karpenter nodes.',
             ),
 
-          nodePoolCpuUsage:
+          nodePoolCpuUsageStat:
             mixinUtils.dashboards.statPanel(
               'Node Pool CPU Usage',
               'short',
               queries.nodePoolCpuUsage,
-              description='The total CPU usage across all Karpenter node pools.',
+              description='The total CPU usage across all node pools.',
             ),
 
-          nodePoolMemoryUsage:
+          nodePoolMemoryUsageStat:
             mixinUtils.dashboards.statPanel(
               'Node Pool Memory Usage',
               'bytes',
               queries.nodePoolMemoryUsage,
-              description='The total memory usage across all Karpenter node pools.',
+              description='The total memory usage across all node pools.',
             ),
 
-          nodePoolCpuLimits:
+          nodePoolCpuLimitsStat:
             mixinUtils.dashboards.statPanel(
               'Node Pool CPU Limits',
               'short',
               queries.nodePoolCpuLimits,
-              description='The total CPU limits across all Karpenter node pools.',
+              description='The total CPU limits across all node pools.',
             ),
 
-          nodePoolMemoryLimits:
+          nodePoolMemoryLimitsStat:
             mixinUtils.dashboards.statPanel(
               'Node Pool Memory Limits',
               'bytes',
               queries.nodePoolMemoryLimits,
-              description='The total memory limits across all Karpenter node pools.',
+              description='The total memory limits across all node pools.',
             ),
 
-          nodePoolsUtilization:
+          nodePoolsUtilizationTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
-              'Node Pool Usage % of Limit',
+              'Node Pool Utilization',
               'percent',
               queries.nodePoolsUtilizationByNodePool,
               '{{ nodepool }} / {{ resource_type }}',
-              calcs=['lastNotNull', 'mean', 'max'],
               description='The percentage of node pool usage relative to limits.',
+              fillOpacity=0,
             ),
 
           // Node Distribution
-          nodesByNodePool:
+          nodesByNodePoolPieChart:
             mixinUtils.dashboards.pieChartPanel(
               'Nodes by Node Pool',
               'short',
               queries.nodesByNodePool,
               '{{ nodepool }}',
               description='The distribution of nodes by node pool.',
+              values=['value', 'percent']
             ),
 
-          nodesByInstanceType:
+          nodesByInstanceTypePieChart:
             mixinUtils.dashboards.pieChartPanel(
               'Nodes by Instance Type',
               'short',
               queries.nodesByInstanceType,
               '{{ instance_type }}',
               description='The distribution of nodes by instance type.',
+              values=['value', 'percent']
             ),
 
-          nodesByCapacityType:
+          nodesByCapacityTypePieChart:
             mixinUtils.dashboards.pieChartPanel(
               'Nodes by Capacity Type',
               'short',
               queries.nodesByCapacityType,
               '{{ capacity_type }}',
               description='The distribution of nodes by capacity type.',
+              values=['value', 'percent']
             ),
 
-          nodesByRegion:
+          nodesByRegionPieChart:
             mixinUtils.dashboards.pieChartPanel(
               'Nodes by Region',
               'short',
               queries.nodesByRegion,
               '{{ region }}',
               description='The distribution of nodes by region.',
+              values=['value', 'percent']
             ),
 
-          nodesByZone:
+          nodesByZonePieChart:
             mixinUtils.dashboards.pieChartPanel(
               'Nodes by Zone',
               'short',
               queries.nodesByZone,
               '{{ zone }}',
               description='The distribution of nodes by zone.',
+              values=['value', 'percent']
             ),
 
-          nodesByArch:
+          nodesByArchPieChart:
             mixinUtils.dashboards.pieChartPanel(
               'Nodes by Arch',
               'short',
               queries.nodesByArch,
               '{{ arch }}',
               description='The distribution of nodes by architecture.',
+              values=['value', 'percent']
             ),
 
-          nodesByOS:
+          nodesByOSPieChart:
             mixinUtils.dashboards.pieChartPanel(
               'Nodes by OS',
               'short',
               queries.nodesByOS,
               '{{ os }}',
               description='The distribution of nodes by operating system.',
+              values=['value', 'percent']
             ),
 
           // Pod Summary
-          podCpuRequests:
+          podCpuRequestsStat:
             mixinUtils.dashboards.statPanel(
               'Pod CPU Requests',
               'short',
@@ -621,7 +627,7 @@ local tbOptions = tablePanel.options;
               description='The total CPU requests for all pods on Karpenter nodes.',
             ),
 
-          podMemoryRequests:
+          podMemoryRequestsStat:
             mixinUtils.dashboards.statPanel(
               'Pod Memory Requests',
               'bytes',
@@ -629,7 +635,7 @@ local tbOptions = tablePanel.options;
               description='The total memory requests for all pods on Karpenter nodes.',
             ),
 
-          podCpuLimits:
+          podCpuLimitsStat:
             mixinUtils.dashboards.statPanel(
               'Pod CPU Limits',
               'short',
@@ -637,7 +643,7 @@ local tbOptions = tablePanel.options;
               description='The total CPU limits for all pods on Karpenter nodes.',
             ),
 
-          podMemoryLimits:
+          podMemoryLimitsStat:
             mixinUtils.dashboards.statPanel(
               'Pod Memory Limits',
               'bytes',
@@ -646,128 +652,61 @@ local tbOptions = tablePanel.options;
             ),
 
           // Pod Distribution
-          podsByNodePool:
+          podsByNodePoolPieChart:
             mixinUtils.dashboards.pieChartPanel(
               'Pods by Node Pool',
               'short',
               queries.podsByNodePool,
               '{{ nodepool }}',
               description='The distribution of pods by node pool.',
+              values=['value', 'percent']
             ),
 
-          podsByInstanceType:
+          podsByInstanceTypePieChart:
             mixinUtils.dashboards.pieChartPanel(
               'Pods by Instance Type',
               'short',
               queries.podsByInstanceType,
               '{{ instance_type }}',
               description='The distribution of pods by instance type.',
+              values=['value', 'percent']
             ),
 
-          podsByCapacityType:
+          podsByCapacityTypePieChart:
             mixinUtils.dashboards.pieChartPanel(
               'Pods by Capacity Type',
               'short',
               queries.podsByCapacityType,
               '{{ capacity_type }}',
               description='The distribution of pods by capacity type.',
+              values=['value', 'percent']
             ),
 
           // Node Pool Table
           nodePoolTable:
-            tablePanel.new(
-              'Node Pools'
-            ) +
-            tbStandardOptions.withUnit('short') +
-            tbOptions.withSortBy(
-              tbOptions.sortBy.withDisplayName('Node Pool')
-            ) +
-            tbOptions.footer.withEnablePagination(true) +
-            tbQueryOptions.withTargets(
+            mixinUtils.dashboards.tablePanel(
+              'Node Pools',
+              'short',
               [
-                g.query.prometheus.new(
-                  '$datasource',
-                  queries.nodePoolCpuUsageByNodePool,
-                ) +
-                g.query.prometheus.withInstant(true) +
-                g.query.prometheus.withFormat('table'),
-                g.query.prometheus.new(
-                  '$datasource',
-                  queries.nodePoolCpuAllocatedByNodePool,
-                ) +
-                g.query.prometheus.withInstant(true) +
-                g.query.prometheus.withFormat('table'),
-                g.query.prometheus.new(
-                  '$datasource',
-                  queries.nodePoolCpuLimitByNodePool,
-                ) +
-                g.query.prometheus.withInstant(true) +
-                g.query.prometheus.withFormat('table'),
-                g.query.prometheus.new(
-                  '$datasource',
-                  queries.nodePoolMemoryUsageByNodePool,
-                ) +
-                g.query.prometheus.withInstant(true) +
-                g.query.prometheus.withFormat('table'),
-                g.query.prometheus.new(
-                  '$datasource',
-                  queries.nodePoolMemoryAllocatedByNodePool,
-                ) +
-                g.query.prometheus.withInstant(true) +
-                g.query.prometheus.withFormat('table'),
-                g.query.prometheus.new(
-                  '$datasource',
-                  queries.nodePoolMemoryLimitByNodePool,
-                ) +
-                g.query.prometheus.withInstant(true) +
-                g.query.prometheus.withFormat('table'),
-                g.query.prometheus.new(
-                  '$datasource',
-                  queries.nodePoolNodesUsageByNodePool,
-                ) +
-                g.query.prometheus.withInstant(true) +
-                g.query.prometheus.withFormat('table'),
-                g.query.prometheus.new(
-                  '$datasource',
-                  queries.nodePoolNodesLimitByNodePool,
-                ) +
-                g.query.prometheus.withInstant(true) +
-                g.query.prometheus.withFormat('table'),
-                g.query.prometheus.new(
-                  '$datasource',
-                  queries.nodePoolPodsUsageByNodePool,
-                ) +
-                g.query.prometheus.withInstant(true) +
-                g.query.prometheus.withFormat('table'),
-                g.query.prometheus.new(
-                  '$datasource',
-                  queries.nodePoolPodsLimitByNodePool,
-                ) +
-                g.query.prometheus.withInstant(true) +
-                g.query.prometheus.withFormat('table'),
-                g.query.prometheus.new(
-                  '$datasource',
-                  queries.nodePoolEphemeralStorageUsageByNodePool,
-                ) +
-                g.query.prometheus.withInstant(true) +
-                g.query.prometheus.withFormat('table'),
-                g.query.prometheus.new(
-                  '$datasource',
-                  queries.nodePoolEphemeralStorageLimitByNodePool,
-                ) +
-                g.query.prometheus.withInstant(true) +
-                g.query.prometheus.withFormat('table'),
-              ]
-            ) +
-            tbQueryOptions.withTransformations([
-              tbQueryOptions.transformation.withId(
-                'merge'
-              ),
-              tbQueryOptions.transformation.withId(
-                'organize'
-              ) +
-              tbQueryOptions.transformation.withOptions(
-                {
+                { expr: queries.nodePoolCpuUsageByNodePool },
+                { expr: queries.nodePoolCpuAllocatedByNodePool },
+                { expr: queries.nodePoolCpuLimitByNodePool },
+                { expr: queries.nodePoolMemoryUsageByNodePool },
+                { expr: queries.nodePoolMemoryAllocatedByNodePool },
+                { expr: queries.nodePoolMemoryLimitByNodePool },
+                { expr: queries.nodePoolNodesUsageByNodePool },
+                { expr: queries.nodePoolNodesLimitByNodePool },
+                { expr: queries.nodePoolPodsUsageByNodePool },
+                { expr: queries.nodePoolPodsLimitByNodePool },
+                { expr: queries.nodePoolEphemeralStorageUsageByNodePool },
+                { expr: queries.nodePoolEphemeralStorageLimitByNodePool },
+              ],
+              description='Summary of all Karpenter node pools with resource usage and limits.',
+              sortBy={ name: 'Node Pool', desc: false },
+              transformations=[
+                tbQueryOptions.transformation.withId('merge'),
+                tbQueryOptions.transformation.withId('organize') +
+                tbQueryOptions.transformation.withOptions({
                   renameByName: {
                     namespace: 'Namespace',
                     nodepool: 'Node Pool',
@@ -804,68 +743,47 @@ local tbOptions = tablePanel.options;
                     Time: true,
                     job: true,
                   },
-                }
-              ),
-            ]) +
-            tbStandardOptions.withOverrides([
-              tbOverride.byName.new('Memory Usage') +
-              tbOverride.byName.withPropertiesFromOptions(
-                tbStandardOptions.withUnit('bytes')
-              ),
-              tbOverride.byName.new('Memory Allocated') +
-              tbOverride.byName.withPropertiesFromOptions(
-                tbStandardOptions.withUnit('bytes')
-              ),
-              tbOverride.byName.new('Memory Limit') +
-              tbOverride.byName.withPropertiesFromOptions(
-                tbStandardOptions.withUnit('bytes')
-              ),
-              tbOverride.byName.new('Storage Usage') +
-              tbOverride.byName.withPropertiesFromOptions(
-                tbStandardOptions.withUnit('bytes')
-              ),
-              tbOverride.byName.new('Storage Limit') +
-              tbOverride.byName.withPropertiesFromOptions(
-                tbStandardOptions.withUnit('bytes')
-              ),
-            ]),
+                }),
+              ],
+              overrides=[
+                tbOverride.byName.new('Memory Usage') +
+                tbOverride.byName.withPropertiesFromOptions(
+                  tbStandardOptions.withUnit('bytes')
+                ),
+                tbOverride.byName.new('Memory Allocated') +
+                tbOverride.byName.withPropertiesFromOptions(
+                  tbStandardOptions.withUnit('bytes')
+                ),
+                tbOverride.byName.new('Memory Limit') +
+                tbOverride.byName.withPropertiesFromOptions(
+                  tbStandardOptions.withUnit('bytes')
+                ),
+                tbOverride.byName.new('Storage Usage') +
+                tbOverride.byName.withPropertiesFromOptions(
+                  tbStandardOptions.withUnit('bytes')
+                ),
+                tbOverride.byName.new('Storage Limit') +
+                tbOverride.byName.withPropertiesFromOptions(
+                  tbStandardOptions.withUnit('bytes')
+                ),
+              ]
+            ),
 
           // Node Table
           nodeTable:
-            tablePanel.new(
-              'Nodes'
-            ) +
-            tbStandardOptions.withUnit('short') +
-            tbOptions.footer.withEnablePagination(true) +
-            tbOptions.withSortBy(
-              tbOptions.sortBy.withDisplayName('CPU Utilization') +
-              tbOptions.sortBy.withDesc(true)
-            ) +
-            tbQueryOptions.withTargets(
+            mixinUtils.dashboards.tablePanel(
+              'Nodes',
+              'short',
               [
-                g.query.prometheus.new(
-                  '$datasource',
-                  queries.nodeCpuUtilization,
-                ) +
-                g.query.prometheus.withInstant(true) +
-                g.query.prometheus.withFormat('table'),
-                g.query.prometheus.new(
-                  '$datasource',
-                  queries.nodeMemoryUtilization,
-                ) +
-                g.query.prometheus.withInstant(true) +
-                g.query.prometheus.withFormat('table'),
-              ]
-            ) +
-            tbQueryOptions.withTransformations([
-              tbQueryOptions.transformation.withId(
-                'merge'
-              ),
-              tbQueryOptions.transformation.withId(
-                'organize'
-              ) +
-              tbQueryOptions.transformation.withOptions(
-                {
+                { expr: queries.nodeCpuUtilization },
+                { expr: queries.nodeMemoryUtilization },
+              ],
+              description='Summary of all Karpenter nodes with CPU and memory utilization.',
+              sortBy={ name: 'CPU Utilization', desc: true },
+              transformations=[
+                tbQueryOptions.transformation.withId('merge'),
+                tbQueryOptions.transformation.withId('organize') +
+                tbQueryOptions.transformation.withOptions({
                   renameByName: {
                     namespace: 'Namespace',
                     node_name: 'Node Name',
@@ -896,45 +814,45 @@ local tbOptions = tablePanel.options;
                     Time: true,
                     job: true,
                   },
-                }
-              ),
-            ]) +
-            tbStandardOptions.withOverrides([
-              tbOverride.byName.new('CPU Utilization') +
-              tbOverride.byName.withPropertiesFromOptions(
-                tbStandardOptions.withUnit('percent') +
-                tbStandardOptions.withMax(100) +
-                tbStandardOptions.thresholds.withMode('percentage') +
-                tbStandardOptions.thresholds.withSteps([
-                  tbStandardOptions.threshold.step.withValue(0) +
-                  tbStandardOptions.threshold.step.withColor('green'),
-                  tbStandardOptions.threshold.step.withValue(33) +
-                  tbStandardOptions.threshold.step.withColor('yellow'),
-                  tbStandardOptions.threshold.step.withValue(66) +
-                  tbStandardOptions.threshold.step.withColor('red'),
-                ]) +
-                tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withType()
-              ),
-              tbOverride.byName.new('Memory Utilization') +
-              tbOverride.byName.withPropertiesFromOptions(
-                tbStandardOptions.withUnit('percent') +
-                tbStandardOptions.withMax(100) +
-                tbStandardOptions.thresholds.withMode('percentage') +
-                tbStandardOptions.thresholds.withSteps([
-                  tbStandardOptions.threshold.step.withValue(0) +
-                  tbStandardOptions.threshold.step.withColor('green'),
-                  tbStandardOptions.threshold.step.withValue(33) +
-                  tbStandardOptions.threshold.step.withColor('yellow'),
-                  tbStandardOptions.threshold.step.withValue(66) +
-                  tbStandardOptions.threshold.step.withColor('red'),
-                ]) +
-                tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withType()
-              ),
-              tbOverride.byName.new('Instance Memory') +
-              tbOverride.byName.withPropertiesFromOptions(
-                tbStandardOptions.withUnit('decmbytes')
-              ),
-            ]),
+                }),
+              ],
+              overrides=[
+                tbOverride.byName.new('CPU Utilization') +
+                tbOverride.byName.withPropertiesFromOptions(
+                  tbStandardOptions.withUnit('percent') +
+                  tbStandardOptions.withMax(100) +
+                  tbStandardOptions.thresholds.withMode('percentage') +
+                  tbStandardOptions.thresholds.withSteps([
+                    tbStandardOptions.threshold.step.withValue(0) +
+                    tbStandardOptions.threshold.step.withColor('green'),
+                    tbStandardOptions.threshold.step.withValue(33) +
+                    tbStandardOptions.threshold.step.withColor('yellow'),
+                    tbStandardOptions.threshold.step.withValue(66) +
+                    tbStandardOptions.threshold.step.withColor('red'),
+                  ]) +
+                  tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withType()
+                ),
+                tbOverride.byName.new('Memory Utilization') +
+                tbOverride.byName.withPropertiesFromOptions(
+                  tbStandardOptions.withUnit('percent') +
+                  tbStandardOptions.withMax(100) +
+                  tbStandardOptions.thresholds.withMode('percentage') +
+                  tbStandardOptions.thresholds.withSteps([
+                    tbStandardOptions.threshold.step.withValue(0) +
+                    tbStandardOptions.threshold.step.withColor('green'),
+                    tbStandardOptions.threshold.step.withValue(33) +
+                    tbStandardOptions.threshold.step.withColor('yellow'),
+                    tbStandardOptions.threshold.step.withValue(66) +
+                    tbStandardOptions.threshold.step.withColor('red'),
+                  ]) +
+                  tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withType()
+                ),
+                tbOverride.byName.new('Instance Memory') +
+                tbOverride.byName.withPropertiesFromOptions(
+                  tbStandardOptions.withUnit('decmbytes')
+                ),
+              ]
+            ),
         };
 
         local rows =
@@ -947,8 +865,8 @@ local tbOptions = tablePanel.options;
           ] +
           grid.makeGrid(
             [
-              panels.clusterCpuUtilization,
-              panels.clusterMemoryUtilization,
+              panels.clusterCpuUtilizationTimeSeries,
+              panels.clusterMemoryUtilizationTimeSeries,
             ],
             panelWidth=12,
             panelHeight=5,
@@ -963,12 +881,12 @@ local tbOptions = tablePanel.options;
           ] +
           grid.makeGrid(
             [
-              panels.nodePools,
-              panels.nodesCount,
-              panels.nodePoolCpuUsage,
-              panels.nodePoolMemoryUsage,
-              panels.nodePoolCpuLimits,
-              panels.nodePoolMemoryLimits,
+              panels.nodePoolsStat,
+              panels.nodesCountStat,
+              panels.nodePoolCpuUsageStat,
+              panels.nodePoolMemoryUsageStat,
+              panels.nodePoolCpuLimitsStat,
+              panels.nodePoolMemoryLimitsStat,
             ],
             panelWidth=4,
             panelHeight=3,
@@ -976,7 +894,7 @@ local tbOptions = tablePanel.options;
           ) +
           grid.makeGrid(
             [
-              panels.nodePoolsUtilization,
+              panels.nodePoolsUtilizationTimeSeries,
             ],
             panelWidth=24,
             panelHeight=8,
@@ -984,9 +902,9 @@ local tbOptions = tablePanel.options;
           ) +
           grid.makeGrid(
             [
-              panels.nodesByNodePool,
-              panels.nodesByInstanceType,
-              panels.nodesByCapacityType,
+              panels.nodesByNodePoolPieChart,
+              panels.nodesByInstanceTypePieChart,
+              panels.nodesByCapacityTypePieChart,
             ],
             panelWidth=8,
             panelHeight=5,
@@ -994,10 +912,10 @@ local tbOptions = tablePanel.options;
           ) +
           grid.makeGrid(
             [
-              panels.nodesByRegion,
-              panels.nodesByZone,
-              panels.nodesByArch,
-              panels.nodesByOS,
+              panels.nodesByRegionPieChart,
+              panels.nodesByZonePieChart,
+              panels.nodesByArchPieChart,
+              panels.nodesByOSPieChart,
             ],
             panelWidth=6,
             panelHeight=5,
@@ -1012,10 +930,10 @@ local tbOptions = tablePanel.options;
           ] +
           grid.makeGrid(
             [
-              panels.podCpuRequests,
-              panels.podMemoryRequests,
-              panels.podCpuLimits,
-              panels.podMemoryLimits,
+              panels.podCpuRequestsStat,
+              panels.podMemoryRequestsStat,
+              panels.podCpuLimitsStat,
+              panels.podMemoryLimitsStat,
             ],
             panelWidth=6,
             panelHeight=3,
@@ -1023,9 +941,9 @@ local tbOptions = tablePanel.options;
           ) +
           grid.makeGrid(
             [
-              panels.podsByNodePool,
-              panels.podsByInstanceType,
-              panels.podsByCapacityType,
+              panels.podsByNodePoolPieChart,
+              panels.podsByInstanceTypePieChart,
+              panels.podsByCapacityTypePieChart,
             ],
             panelWidth=8,
             panelHeight=5,
@@ -1041,17 +959,17 @@ local tbOptions = tablePanel.options;
             tablePanel.gridPos.withX(0) +
             tablePanel.gridPos.withY(37) +
             tablePanel.gridPos.withW(24) +
-            tablePanel.gridPos.withH(8),
+            tablePanel.gridPos.withH(12),
             row.new('Nodes') +
             row.gridPos.withX(0) +
-            row.gridPos.withY(45) +
+            row.gridPos.withY(49) +
             row.gridPos.withW(24) +
             row.gridPos.withH(1),
             panels.nodeTable +
             tablePanel.gridPos.withX(0) +
-            tablePanel.gridPos.withY(46) +
+            tablePanel.gridPos.withY(50) +
             tablePanel.gridPos.withW(24) +
-            tablePanel.gridPos.withH(8),
+            tablePanel.gridPos.withH(12),
           ];
 
         mixinUtils.dashboards.bypassDashboardValidation +

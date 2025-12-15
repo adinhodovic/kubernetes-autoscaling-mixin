@@ -74,8 +74,8 @@
             "overrides": [ ]
          },
          "gridPos": {
-            "h": 4,
-            "w": 12,
+            "h": 6,
+            "w": 3,
             "x": 0,
             "y": 1
          },
@@ -92,7 +92,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  karpenter_cluster_state_synced{\n    cluster=\"$cluster\", job=~\"$job\"\n  }\n) by (job)\n",
+               "expr": "sum(\n  karpenter_cluster_state_synced{\n    cluster=\"$cluster\",\njob=~\"$job\"\n\n  }\n) by (job)\n",
                "instant": false
             }
          ],
@@ -125,9 +125,9 @@
             "overrides": [ ]
          },
          "gridPos": {
-            "h": 4,
-            "w": 12,
-            "x": 12,
+            "h": 6,
+            "w": 3,
+            "x": 3,
             "y": 1
          },
          "id": 3,
@@ -143,7 +143,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  karpenter_cluster_state_node_count{\n    cluster=\"$cluster\", job=~\"$job\"\n  }\n) by (job)\n",
+               "expr": "sum(\n  karpenter_cluster_state_node_count{\n    cluster=\"$cluster\",\njob=~\"$job\"\n\n  }\n) by (job)\n",
                "instant": false
             }
          ],
@@ -167,22 +167,21 @@
          },
          "gridPos": {
             "h": 6,
-            "w": 8,
-            "x": 0,
-            "y": 5
+            "w": 18,
+            "x": 12,
+            "y": 1
          },
          "id": 4,
          "options": {
             "legend": {
                "calcs": [
-                  "lastNotNull",
                   "mean",
                   "max"
                ],
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "LastNotNull",
+               "sortBy": "Mean",
                "sortDesc": true
             },
             "tooltip": {
@@ -198,7 +197,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "round(\n  sum(\n    increase(\n      karpenter_cloudprovider_errors_total{\n        cluster=\"$cluster\", job=~\"$job\"\n      }[$__rate_interval]\n    )\n  ) by (job, provider, controller, method, error)\n)\n",
+               "expr": "round(\n  sum(\n    increase(\n      karpenter_cloudprovider_errors_total{\n        cluster=\"$cluster\",\njob=~\"$job\"\n\n      }[$__rate_interval]\n    )\n  ) by (job, provider, controller, method, error)\n)\n",
                "legendFormat": "{{ provider }} - {{ controller }} - {{ method }} - {{ error }}"
             }
          ],
@@ -222,9 +221,9 @@
          },
          "gridPos": {
             "h": 6,
-            "w": 8,
-            "x": 8,
-            "y": 5
+            "w": 12,
+            "x": 0,
+            "y": 7
          },
          "id": 5,
          "options": {
@@ -252,8 +251,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "max(\n  karpenter_nodes_termination_duration_seconds{\n    cluster=\"$cluster\", job=~\"$job\",\n    quantile=\"0.5\"\n  }\n)\n",
-               "interval": "1m",
+               "expr": "max(\n  karpenter_nodes_termination_duration_seconds{\n    cluster=\"$cluster\",\njob=~\"$job\"\n,\n    quantile=\"0.5\"\n  }\n)\n",
                "legendFormat": "P50"
             },
             {
@@ -262,8 +260,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "max(\n  karpenter_nodes_termination_duration_seconds{\n    cluster=\"$cluster\", job=~\"$job\",\n    quantile=\"0.95\"\n  }\n)\n",
-               "interval": "1m",
+               "expr": "max(\n  karpenter_nodes_termination_duration_seconds{\n    cluster=\"$cluster\",\njob=~\"$job\"\n,\n    quantile=\"0.95\"\n  }\n)\n",
                "legendFormat": "P95"
             },
             {
@@ -272,8 +269,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "max(\n  karpenter_nodes_termination_duration_seconds{\n    cluster=\"$cluster\", job=~\"$job\",\n    quantile=\"0.99\"\n  }\n)\n",
-               "interval": "1m",
+               "expr": "max(\n  karpenter_nodes_termination_duration_seconds{\n    cluster=\"$cluster\",\njob=~\"$job\"\n,\n    quantile=\"0.99\"\n  }\n)\n",
                "legendFormat": "P99"
             }
          ],
@@ -297,22 +293,21 @@
          },
          "gridPos": {
             "h": 6,
-            "w": 8,
-            "x": 16,
-            "y": 5
+            "w": 12,
+            "x": 12,
+            "y": 7
          },
          "id": 6,
          "options": {
             "legend": {
                "calcs": [
-                  "lastNotNull",
                   "mean",
                   "max"
                ],
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "LastNotNull",
+               "sortBy": "Mean",
                "sortDesc": true
             },
             "tooltip": {
@@ -328,8 +323,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "max(\n  karpenter_pods_startup_duration_seconds{\n    cluster=\"$cluster\", job=~\"$job\",\n    quantile=\"0.5\"\n  }\n)\n",
-               "interval": "1m",
+               "expr": "max(\n  karpenter_pods_startup_duration_seconds{\n    cluster=\"$cluster\",\njob=~\"$job\"\n,\n    quantile=\"0.5\"\n  }\n)\n",
                "legendFormat": "P50"
             },
             {
@@ -338,8 +332,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "max(\n  karpenter_pods_startup_duration_seconds{\n    cluster=\"$cluster\", job=~\"$job\",\n    quantile=\"0.95\"\n  }\n)\n",
-               "interval": "1m",
+               "expr": "max(\n  karpenter_pods_startup_duration_seconds{\n    cluster=\"$cluster\",\njob=~\"$job\"\n,\n    quantile=\"0.95\"\n  }\n)\n",
                "legendFormat": "P95"
             },
             {
@@ -348,8 +341,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "max(\n  karpenter_pods_startup_duration_seconds{\n    cluster=\"$cluster\", job=~\"$job\",\n    quantile=\"0.99\"\n  }\n)\n",
-               "interval": "1m",
+               "expr": "max(\n  karpenter_pods_startup_duration_seconds{\n    cluster=\"$cluster\",\njob=~\"$job\"\n,\n    quantile=\"0.99\"\n  }\n)\n",
                "legendFormat": "P99"
             }
          ],
@@ -362,7 +354,7 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 11
+            "y": 13
          },
          "id": 7,
          "title": "Interruption Queue",
@@ -387,19 +379,19 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 12
+            "y": 14
          },
          "id": 8,
          "options": {
             "legend": {
                "calcs": [
-                  "lastNotNull",
-                  "mean"
+                  "mean",
+                  "max"
                ],
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "LastNotNull",
+               "sortBy": "Mean",
                "sortDesc": true
             },
             "tooltip": {
@@ -415,7 +407,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "sum(\n  increase(\n    karpenter_interruption_received_messages_total{\n      cluster=\"$cluster\", job=~\"$job\"\n    }[$__rate_interval]\n  )\n) by (job, message_type)\n",
+               "expr": "sum(\n  increase(\n    karpenter_interruption_received_messages_total{\n      cluster=\"$cluster\",\njob=~\"$job\"\n\n    }[$__rate_interval]\n  )\n) by (job, message_type)\n",
                "legendFormat": "{{ message_type }}"
             }
          ],
@@ -441,19 +433,19 @@
             "h": 6,
             "w": 8,
             "x": 8,
-            "y": 12
+            "y": 14
          },
          "id": 9,
          "options": {
             "legend": {
                "calcs": [
-                  "lastNotNull",
-                  "mean"
+                  "mean",
+                  "max"
                ],
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "LastNotNull",
+               "sortBy": "Mean",
                "sortDesc": true
             },
             "tooltip": {
@@ -469,7 +461,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "sum(\n  increase(\n    karpenter_interruption_deleted_messages_total{\n      cluster=\"$cluster\", job=~\"$job\"\n    }[$__rate_interval]\n  )\n) by (job)\n",
+               "expr": "sum(\n  increase(\n    karpenter_interruption_deleted_messages_total{\n      cluster=\"$cluster\",\njob=~\"$job\"\n\n    }[$__rate_interval]\n  )\n) by (job)\n",
                "legendFormat": "Deleted Messages"
             }
          ],
@@ -495,7 +487,7 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 12
+            "y": 14
          },
          "id": 10,
          "options": {
@@ -523,7 +515,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "histogram_quantile(0.50,\n  sum(\n    irate(\n      karpenter_interruption_message_queue_duration_seconds_bucket{\n        cluster=\"$cluster\", job=~\"$job\"\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
+               "expr": "histogram_quantile(0.50,\n  sum(\n    irate(\n      karpenter_interruption_message_queue_duration_seconds_bucket{\n        cluster=\"$cluster\",\njob=~\"$job\"\n\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
                "legendFormat": "P50"
             },
             {
@@ -532,7 +524,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "histogram_quantile(0.95,\n  sum(\n    irate(\n      karpenter_interruption_message_queue_duration_seconds_bucket{\n        cluster=\"$cluster\", job=~\"$job\"\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
+               "expr": "histogram_quantile(0.95,\n  sum(\n    irate(\n      karpenter_interruption_message_queue_duration_seconds_bucket{\n        cluster=\"$cluster\",\njob=~\"$job\"\n\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
                "legendFormat": "P95"
             },
             {
@@ -541,7 +533,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "histogram_quantile(0.99,\n  sum(\n    irate(\n      karpenter_interruption_message_queue_duration_seconds_bucket{\n        cluster=\"$cluster\", job=~\"$job\"\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
+               "expr": "histogram_quantile(0.99,\n  sum(\n    irate(\n      karpenter_interruption_message_queue_duration_seconds_bucket{\n        cluster=\"$cluster\",\njob=~\"$job\"\n\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
                "legendFormat": "P99"
             }
          ],
@@ -554,7 +546,7 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 18
+            "y": 20
          },
          "id": 11,
          "title": "Work Queue",
@@ -579,20 +571,19 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 19
+            "y": 21
          },
          "id": 12,
          "options": {
             "legend": {
                "calcs": [
-                  "lastNotNull",
                   "mean",
                   "max"
                ],
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "LastNotNull",
+               "sortBy": "Mean",
                "sortDesc": true
             },
             "tooltip": {
@@ -608,7 +599,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "sum(\n  karpenter_workqueue_depth{\n    cluster=\"$cluster\", job=~\"$job\"\n  }\n) by (job)\n",
+               "expr": "sum(\n  karpenter_workqueue_depth{\n    cluster=\"$cluster\",\njob=~\"$job\"\n\n  }\n) by (job)\n",
                "legendFormat": "Queue Depth"
             }
          ],
@@ -634,7 +625,7 @@
             "h": 6,
             "w": 8,
             "x": 8,
-            "y": 19
+            "y": 21
          },
          "id": 13,
          "options": {
@@ -662,7 +653,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "histogram_quantile(0.50,\n  sum(\n    irate(\n      karpenter_workqueue_queue_duration_seconds_bucket{\n        cluster=\"$cluster\", job=~\"$job\"\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
+               "expr": "histogram_quantile(0.50,\n  sum(\n    irate(\n      karpenter_workqueue_queue_duration_seconds_bucket{\n        cluster=\"$cluster\",\njob=~\"$job\"\n\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
                "legendFormat": "P50"
             },
             {
@@ -671,7 +662,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "histogram_quantile(0.95,\n  sum(\n    irate(\n      karpenter_workqueue_queue_duration_seconds_bucket{\n        cluster=\"$cluster\", job=~\"$job\"\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
+               "expr": "histogram_quantile(0.95,\n  sum(\n    irate(\n      karpenter_workqueue_queue_duration_seconds_bucket{\n        cluster=\"$cluster\",\njob=~\"$job\"\n\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
                "legendFormat": "P95"
             },
             {
@@ -680,7 +671,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "histogram_quantile(0.99,\n  sum(\n    irate(\n      karpenter_workqueue_queue_duration_seconds_bucket{\n        cluster=\"$cluster\", job=~\"$job\"\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
+               "expr": "histogram_quantile(0.99,\n  sum(\n    irate(\n      karpenter_workqueue_queue_duration_seconds_bucket{\n        cluster=\"$cluster\",\njob=~\"$job\"\n\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
                "legendFormat": "P99"
             }
          ],
@@ -706,7 +697,7 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 19
+            "y": 21
          },
          "id": 14,
          "options": {
@@ -734,7 +725,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "histogram_quantile(0.50,\n  sum(\n    irate(\n      karpenter_workqueue_work_duration_seconds_bucket{\n        cluster=\"$cluster\", job=~\"$job\"\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
+               "expr": "histogram_quantile(0.50,\n  sum(\n    irate(\n      karpenter_workqueue_work_duration_seconds_bucket{\n        cluster=\"$cluster\",\njob=~\"$job\"\n\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
                "legendFormat": "P50"
             },
             {
@@ -743,7 +734,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "histogram_quantile(0.95,\n  sum(\n    irate(\n      karpenter_workqueue_work_duration_seconds_bucket{\n        cluster=\"$cluster\", job=~\"$job\"\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
+               "expr": "histogram_quantile(0.95,\n  sum(\n    irate(\n      karpenter_workqueue_work_duration_seconds_bucket{\n        cluster=\"$cluster\",\njob=~\"$job\"\n\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
                "legendFormat": "P95"
             },
             {
@@ -752,7 +743,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "histogram_quantile(0.99,\n  sum(\n    irate(\n      karpenter_workqueue_work_duration_seconds_bucket{\n        cluster=\"$cluster\", job=~\"$job\"\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
+               "expr": "histogram_quantile(0.99,\n  sum(\n    irate(\n      karpenter_workqueue_work_duration_seconds_bucket{\n        cluster=\"$cluster\",\njob=~\"$job\"\n\n      }[$__rate_interval]\n    ) > 0\n  ) by (job, le)\n)\n",
                "legendFormat": "P99"
             }
          ],
@@ -765,7 +756,7 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 25
+            "y": 27
          },
          "id": 15,
          "title": "Controller",
@@ -776,34 +767,38 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "The average duration of controller reconciliation.",
+         "description": "The ops of controller reconciliation.",
          "fieldConfig": {
             "defaults": {
                "custom": {
-                  "fillOpacity": 10
+                  "axisSoftMin": 0,
+                  "fillOpacity": 100,
+                  "lineWidth": 1,
+                  "stacking": {
+                     "mode": "normal"
+                  }
                },
-               "unit": "s"
+               "unit": "ops"
             },
             "overrides": [ ]
          },
          "gridPos": {
-            "h": 6,
+            "h": 8,
             "w": 24,
             "x": 0,
-            "y": 26
+            "y": 28
          },
          "id": 16,
          "options": {
             "legend": {
                "calcs": [
-                  "lastNotNull",
                   "mean",
                   "max"
                ],
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "LastNotNull",
+               "sortBy": "Mean",
                "sortDesc": true
             },
             "tooltip": {
@@ -819,11 +814,70 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "sum(\n  irate(\n    karpenter_controller_runtime_reconcile_time_seconds_sum{\n      cluster=\"$cluster\", job=~\"$job\"\n    }[$__rate_interval]\n  )\n) by (job, controller, result)\n/\nsum(\n  irate(\n    karpenter_controller_runtime_reconcile_time_seconds_count{\n      cluster=\"$cluster\", job=~\"$job\"\n    }[$__rate_interval]\n  )\n) by (job, controller, result)\n",
-               "legendFormat": "{{ controller }} - {{ result }}"
+               "expr": "sum(\n  irate(\n    controller_runtime_reconcile_total{\n      cluster=\"$cluster\",\njob=~\"$job\"\n\n    }[$__rate_interval]\n  )\n) by (job, controller)\n",
+               "legendFormat": "{{ controller }}"
             }
          ],
-         "title": "Controller Reconcile Duration",
+         "title": "Controller Reconcile",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "The result of controller reconciliations.",
+         "fieldConfig": {
+            "defaults": {
+               "custom": {
+                  "axisSoftMin": 0,
+                  "fillOpacity": 100,
+                  "lineWidth": 1,
+                  "stacking": {
+                     "mode": "normal"
+                  }
+               },
+               "unit": "ops"
+            },
+            "overrides": [ ]
+         },
+         "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 36
+         },
+         "id": 17,
+         "options": {
+            "legend": {
+               "calcs": [
+                  "mean",
+                  "max"
+               ],
+               "displayMode": "table",
+               "placement": "right",
+               "showLegend": true,
+               "sortBy": "Mean",
+               "sortDesc": true
+            },
+            "tooltip": {
+               "mode": "multi",
+               "sort": "desc"
+            }
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "exemplar": false,
+               "expr": "sum(\n  irate(\n    controller_runtime_reconcile_total{\n      cluster=\"$cluster\",\njob=~\"$job\"\n\n    }[$__rate_interval]\n  )\n) by (job, result)\n",
+               "legendFormat": "{{ result }}"
+            }
+         ],
+         "title": "Controller Result",
          "type": "timeseries"
       }
    ],
@@ -880,5 +934,5 @@
    },
    "timezone": "utc",
    "title": "Kubernetes / Autoscaling / Karpenter / Performance",
-   "uid": "kubernetes-autoscaling-mixin-kperf-jkwq1"
+   "uid": "kubernetes-autoscaling-mixin-kperf-jkwq"
 }

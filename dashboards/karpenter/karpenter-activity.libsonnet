@@ -16,7 +16,7 @@ local grid = g.util.grid;
         local variables = [
           defaultVariables.datasource,
           defaultVariables.cluster,
-          defaultVariables.jobSimple,
+          defaultVariables.job,
           defaultVariables.nodepoolSimple,
         ];
 
@@ -125,68 +125,68 @@ local grid = g.util.grid;
 
         local panels = {
           // Node Activity
-          nodesCreatedByNodePool:
+          nodesCreatedByNodePoolTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Nodes Created by Node Pool',
               'short',
               queries.nodesCreatedByNodePool,
               '{{ nodepool }}',
-              calcs=['lastNotNull', 'mean'],
               description='The number of nodes created by node pool.',
+              stack='normal'
             ),
 
-          nodesTerminatedByNodePool:
+          nodesTerminatedByNodePoolTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Nodes Terminated by Node Pool',
               'short',
               queries.nodesTerminatedByNodePool,
               '{{ nodepool }}',
-              calcs=['lastNotNull', 'mean'],
               description='The number of nodes terminated by node pool.',
+              stack='normal'
             ),
 
-          nodesVoluntaryDisruptionDecisions:
+          nodesVoluntaryDisruptionDecisionsTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Node Disruption Decisions by Reason and Decision',
               'short',
               queries.nodesVoluntaryDisruptionDecisions,
               '{{ decision }} - {{ reason }}',
-              calcs=['lastNotNull', 'mean', 'max'],
               description='The number of voluntary disruption decisions by reason and decision.',
+              stack='normal'
             ),
 
-          nodesVoluntaryDisruptionEligible:
+          nodesVoluntaryDisruptionEligibleTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Nodes Eligible for Disruption by Reason',
               'short',
               queries.nodesVoluntaryDisruptionEligible,
               '{{ reason }}',
-              calcs=['lastNotNull', 'mean', 'max'],
               description='The number of nodes eligible for voluntary disruption by reason.',
+              stack='normal'
             ),
 
-          nodesDisrupted:
+          nodesDisruptedTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Nodes Disrupted by Node Pool',
               'short',
               queries.nodesDisrupted,
               '{{ nodepool }} - {{ capacity_type }} - {{ reason }}',
-              calcs=['lastNotNull', 'mean', 'max'],
               description='The number of nodes disrupted by node pool, capacity type, and reason.',
+              stack='normal'
             ),
 
           // Pod Activity
-          podStateByPhase:
+          podStateByPhaseTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Pods by Phase',
               'short',
               queries.podStateByPhase,
               '{{ phase }}',
-              calcs=['lastNotNull', 'mean', 'max'],
               description='The number of pods by phase.',
+              stack='normal'
             ),
 
-          podStartupDuration:
+          podStartupDurationTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Pods Startup Duration',
               's',
@@ -194,21 +194,18 @@ local grid = g.util.grid;
                 {
                   expr: queries.podsStartupP50Duration,
                   legend: 'P50',
-                  interval: '1m',
                 },
                 {
                   expr: queries.podsStartupP95Duration,
                   legend: 'P95',
-                  interval: '1m',
                 },
                 {
                   expr: queries.podsStartupP99Duration,
                   legend: 'P99',
-                  interval: '1m',
                 },
               ],
-              calcs=['lastNotNull', 'mean', 'max'],
               description='The duration for pods to start up.',
+              fillOpacity=0
             ),
         };
 
@@ -222,8 +219,8 @@ local grid = g.util.grid;
           ] +
           grid.makeGrid(
             [
-              panels.nodesCreatedByNodePool,
-              panels.nodesTerminatedByNodePool,
+              panels.nodesCreatedByNodePoolTimeSeries,
+              panels.nodesTerminatedByNodePoolTimeSeries,
             ],
             panelWidth=12,
             panelHeight=6,
@@ -231,29 +228,36 @@ local grid = g.util.grid;
           ) +
           grid.makeGrid(
             [
-              panels.nodesVoluntaryDisruptionDecisions,
-              panels.nodesVoluntaryDisruptionEligible,
-              panels.nodesDisrupted,
+              panels.nodesVoluntaryDisruptionDecisionsTimeSeries,
+              panels.nodesVoluntaryDisruptionEligibleTimeSeries,
             ],
-            panelWidth=8,
+            panelWidth=12,
             panelHeight=6,
             startY=7
+          ) +
+          grid.makeGrid(
+            [
+              panels.nodesDisruptedTimeSeries,
+            ],
+            panelWidth=24,
+            panelHeight=6,
+            startY=13
           ) +
           [
             row.new('Pod Activity') +
             row.gridPos.withX(0) +
-            row.gridPos.withY(13) +
+            row.gridPos.withY(19) +
             row.gridPos.withW(24) +
             row.gridPos.withH(1),
           ] +
           grid.makeGrid(
             [
-              panels.podStateByPhase,
-              panels.podStartupDuration,
+              panels.podStateByPhaseTimeSeries,
+              panels.podStartupDurationTimeSeries,
             ],
             panelWidth=12,
             panelHeight=6,
-            startY=14
+            startY=20
           );
 
         mixinUtils.dashboards.bypassDashboardValidation +

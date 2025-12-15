@@ -20,7 +20,7 @@ local stStandardOptions = stat.standardOptions;
         local variables = [
           defaultVariables.datasource,
           defaultVariables.cluster,
-          defaultVariables.jobSimple,
+          defaultVariables.job,
         ];
 
         local defaultFilters = util.filters($._config);
@@ -252,25 +252,27 @@ local stStandardOptions = stat.standardOptions;
           controllerReconcile: |||
             sum(
               irate(
-                karpenter_controller_runtime_reconcile_time_seconds_sum{
+                controller_runtime_reconcile_total{
                   %(base)s
                 }[$__rate_interval]
               )
-            ) by (job, controller, result)
-            /
+            ) by (job, controller)
+          ||| % defaultFilters,
+
+          controllerResult: |||
             sum(
               irate(
-                karpenter_controller_runtime_reconcile_time_seconds_count{
+                controller_runtime_reconcile_total{
                   %(base)s
                 }[$__rate_interval]
               )
-            ) by (job, controller, result)
+            ) by (job, result)
           ||| % defaultFilters,
         };
 
         local panels = {
           // Summary
-          clusterStateSynced:
+          clusterStateSyncedStat:
             mixinUtils.dashboards.statPanel(
               'Cluster State Synced',
               'short',
@@ -293,7 +295,7 @@ local stStandardOptions = stat.standardOptions;
               ],
             ),
 
-          clusterStateNodeCount:
+          clusterStateNodeCountStat:
             mixinUtils.dashboards.statPanel(
               'Cluster State Node Count',
               'short',
@@ -307,18 +309,17 @@ local stStandardOptions = stat.standardOptions;
               ],
             ),
 
-          cloudProviderErrors:
+          cloudProviderErrorsTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Cloud Provider Errors',
               'short',
               queries.cloudProviderErrors,
               '{{ provider }} - {{ controller }} - {{ method }} - {{ error }}',
-              calcs=['lastNotNull', 'mean', 'max'],
               description='The number of cloud provider errors over time.',
             ),
 
           // Node Termination & Pod Startup
-          nodeTerminationDuration:
+          nodeTerminationDurationTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Node Termination Duration',
               's',
@@ -326,24 +327,20 @@ local stStandardOptions = stat.standardOptions;
                 {
                   expr: queries.nodeTerminationP50Duration,
                   legend: 'P50',
-                  interval: '1m',
                 },
                 {
                   expr: queries.nodeTerminationP95Duration,
                   legend: 'P95',
-                  interval: '1m',
                 },
                 {
                   expr: queries.nodeTerminationP99Duration,
                   legend: 'P99',
-                  interval: '1m',
                 },
               ],
-              calcs=['mean', 'max'],
               description='The duration to terminate nodes.',
             ),
 
-          podStartupDuration:
+          podStartupDurationTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Pods Startup Duration',
               's',
@@ -351,45 +348,39 @@ local stStandardOptions = stat.standardOptions;
                 {
                   expr: queries.podsStartupP50Duration,
                   legend: 'P50',
-                  interval: '1m',
                 },
                 {
                   expr: queries.podsStartupP95Duration,
                   legend: 'P95',
-                  interval: '1m',
                 },
                 {
                   expr: queries.podsStartupP99Duration,
                   legend: 'P99',
-                  interval: '1m',
                 },
               ],
-              calcs=['lastNotNull', 'mean', 'max'],
               description='The duration for pods to start up.',
             ),
 
           // Interruption Queue
-          interruptionReceivedMessages:
+          interruptionReceivedMessagesTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Interruption Received Messages',
               'short',
               queries.interruptionReceivedMessages,
               '{{ message_type }}',
-              calcs=['lastNotNull', 'mean'],
               description='The number of interruption messages received.',
             ),
 
-          interruptionDeletedMessages:
+          interruptionDeletedMessagesTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Interruption Deleted Messages',
               'short',
               queries.interruptionDeletedMessages,
               'Deleted Messages',
-              calcs=['lastNotNull', 'mean'],
               description='The number of interruption messages deleted.',
             ),
 
-          interuptionDuration:
+          interuptionDurationTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Interruption Duration',
               's',
@@ -407,22 +398,20 @@ local stStandardOptions = stat.standardOptions;
                   legend: 'P99',
                 },
               ],
-              calcs=['mean', 'max'],
               description='The duration for interruption message processing.',
             ),
 
           // Work Queue
-          workQueueDepth:
+          workQueueDepthTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Work Queue Depth',
               'short',
               queries.workQueueDepth,
               'Queue Depth',
-              calcs=['lastNotNull', 'mean', 'max'],
               description='The depth of the work queue.',
             ),
 
-          workQueueInQueueDuration:
+          workQueueInQueueDurationTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Work Queue In Queue Duration',
               's',
@@ -440,11 +429,10 @@ local stStandardOptions = stat.standardOptions;
                   legend: 'P99',
                 },
               ],
-              calcs=['mean', 'max'],
               description='The duration items spend in the work queue.',
             ),
 
-          workQueueWorkDuration:
+          workQueueWorkDurationTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Work Queue Work Duration',
               's',
@@ -462,19 +450,28 @@ local stStandardOptions = stat.standardOptions;
                   legend: 'P99',
                 },
               ],
-              calcs=['mean', 'max'],
               description='The duration to process work queue items.',
             ),
 
           // Controller
-          controllerReconcile:
+          controllerReconcileTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
-              'Controller Reconcile Duration',
-              's',
+              'Controller Reconcile',
+              'ops',
               queries.controllerReconcile,
-              '{{ controller }} - {{ result }}',
-              calcs=['lastNotNull', 'mean', 'max'],
-              description='The average duration of controller reconciliation.',
+              '{{ controller }}',
+              description='The ops of controller reconciliation.',
+              stack='normal'
+            ),
+
+          controllerResultTimeSeries:
+            mixinUtils.dashboards.timeSeriesPanel(
+              'Controller Result',
+              'ops',
+              queries.controllerResult,
+              '{{ result }}',
+              description='The result of controller reconciliations.',
+              stack='normal'
             ),
         };
 
@@ -488,71 +485,78 @@ local stStandardOptions = stat.standardOptions;
           ] +
           grid.makeGrid(
             [
-              panels.clusterStateSynced,
-              panels.clusterStateNodeCount,
+              panels.clusterStateSyncedStat,
+              panels.clusterStateNodeCountStat,
             ],
-            panelWidth=12,
-            panelHeight=4,
+            panelWidth=3,
+            panelHeight=6,
             startY=1
           ) +
+          [
+            panels.cloudProviderErrorsTimeSeries +
+            row.gridPos.withX(12) +
+            row.gridPos.withY(1) +
+            row.gridPos.withW(18) +
+            row.gridPos.withH(6),
+          ] +
           grid.makeGrid(
             [
-              panels.cloudProviderErrors,
-              panels.nodeTerminationDuration,
-              panels.podStartupDuration,
+              panels.nodeTerminationDurationTimeSeries,
+              panels.podStartupDurationTimeSeries,
             ],
-            panelWidth=8,
+            panelWidth=12,
             panelHeight=6,
-            startY=5
+            startY=7
           ) +
           [
             row.new('Interruption Queue') +
             row.gridPos.withX(0) +
-            row.gridPos.withY(11) +
+            row.gridPos.withY(13) +
             row.gridPos.withW(24) +
             row.gridPos.withH(1),
           ] +
           grid.makeGrid(
             [
-              panels.interruptionReceivedMessages,
-              panels.interruptionDeletedMessages,
-              panels.interuptionDuration,
+              panels.interruptionReceivedMessagesTimeSeries,
+              panels.interruptionDeletedMessagesTimeSeries,
+              panels.interuptionDurationTimeSeries,
             ],
             panelWidth=8,
             panelHeight=6,
-            startY=12
+            startY=14
           ) +
           [
             row.new('Work Queue') +
             row.gridPos.withX(0) +
-            row.gridPos.withY(18) +
+            row.gridPos.withY(20) +
             row.gridPos.withW(24) +
             row.gridPos.withH(1),
           ] +
           grid.makeGrid(
             [
-              panels.workQueueDepth,
-              panels.workQueueInQueueDuration,
-              panels.workQueueWorkDuration,
+              panels.workQueueDepthTimeSeries,
+              panels.workQueueInQueueDurationTimeSeries,
+              panels.workQueueWorkDurationTimeSeries,
             ],
             panelWidth=8,
             panelHeight=6,
-            startY=19
+            startY=21
           ) +
           [
             row.new('Controller') +
             row.gridPos.withX(0) +
-            row.gridPos.withY(25) +
+            row.gridPos.withY(27) +
             row.gridPos.withW(24) +
             row.gridPos.withH(1),
           ] +
           grid.makeGrid(
             [
-              panels.controllerReconcile,
+              panels.controllerReconcileTimeSeries,
+              panels.controllerResultTimeSeries,
             ],
             panelWidth=24,
-            panelHeight=6,
-            startY=26
+            panelHeight=8,
+            startY=28
           );
 
         mixinUtils.dashboards.bypassDashboardValidation +

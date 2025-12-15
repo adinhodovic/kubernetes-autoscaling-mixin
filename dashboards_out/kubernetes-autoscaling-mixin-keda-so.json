@@ -338,7 +338,7 @@
                   {
                      "targetBlank": true,
                      "title": "Go to HPA",
-                     "url": "/d/kubernetes-autoscaling-mixin-hpa-jkwq1/kubernetes-autoscaling-horizontal-pod-autoscaler?var-namespace=${__data.fields.namespace}&var-hpa=keda-hpa-${__data.fields.scaledObject}&var-metric_name=${__data.fields.metric}"
+                     "url": "/d/kubernetes-autoscaling-mixin-hpa-jkwq/kubernetes-autoscaling-horizontal-pod-autoscaler?var-namespace=${__data.fields.namespace}&var-hpa=keda-hpa-${__data.fields.scaledObject}&var-metric_name=${__data.fields.metric}"
                   }
                ],
                "thresholds": {
@@ -817,5 +817,5 @@
    },
    "timezone": "utc",
    "title": "Kubernetes / Autoscaling / KEDA / Scaled Object",
-   "uid": "kubernetes-autoscaling-mixin-kedaso-j1"
+   "uid": "kubernetes-autoscaling-mixin-kedaso-jkwq"
 }

@@ -21,15 +21,15 @@ local annotation = g.dashboard.annotation;
 
     grafanaUrl: 'https://grafana.com',
 
-    pdbDashboardUid: 'kubernetes-autoscaling-mixin-pdb-jkwq1',
-    hpaDashboardUid: 'kubernetes-autoscaling-mixin-hpa-jkwq1',
-    vpaDashboardUid: 'kubernetes-autoscaling-mixin-vpa-jkwq1',
-    clusterAutoscalerDashboardUid: 'kubernetes-autoscaling-mixin-ca-jkwq1',
-    karpenterOverviewDashboardUid: 'kubernetes-autoscaling-mixin-kover-jkwq1',
-    karpenterActivityDashboardUid: 'kubernetes-autoscaling-mixin-kact-jkwq1j',
-    karpenterPerformanceDashboardUid: 'kubernetes-autoscaling-mixin-kperf-jkwq1',
-    kedaScaledObjectDashboardUid: 'kubernetes-autoscaling-mixin-kedaso-j1',
-    kedaScaledJobDashboardUid: 'kubernetes-autoscaling-mixin-kedasj-jkwq1',
+    pdbDashboardUid: 'kubernetes-autoscaling-mixin-pdb-jkwq',
+    hpaDashboardUid: 'kubernetes-autoscaling-mixin-hpa-jkwq',
+    vpaDashboardUid: 'kubernetes-autoscaling-mixin-vpa-jkwq',
+    clusterAutoscalerDashboardUid: 'kubernetes-autoscaling-mixin-ca-jkwq',
+    karpenterOverviewDashboardUid: 'kubernetes-autoscaling-mixin-kover-jkwq',
+    karpenterActivityDashboardUid: 'kubernetes-autoscaling-mixin-kact-jkwq',
+    karpenterPerformanceDashboardUid: 'kubernetes-autoscaling-mixin-kperf-jkwq',
+    kedaScaledObjectDashboardUid: 'kubernetes-autoscaling-mixin-kedaso-jkwq',
+    kedaScaledJobDashboardUid: 'kubernetes-autoscaling-mixin-kedasj-jkwq',
 
     vpa: {
       enabled: true,

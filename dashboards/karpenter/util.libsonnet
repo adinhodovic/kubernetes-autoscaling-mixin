@@ -19,13 +19,29 @@ local query = variable.query;
     capacityType: 'capacity_type=~"$capacity_type"',
     nodepool: 'nodepool=~"$nodepool"',
 
-    base: '%(cluster)s, %(job)s' % this,
+    base: |||
+      %(cluster)s,
+      %(job)s
+    ||| % this,
 
-    default: '%(base)s, %(nodepool)s' % this,
+    default: |||
+      %(base)s,
+      %(nodepool)s
+    ||| % this,
 
-    withLocation: '%(default)s, %(region)s, %(zone)s' % this,
+    withLocation: |||
+      %(default)s,
+      %(region)s,
+      %(zone)s
+    ||| % this,
 
-    full: '%(withLocation)s, %(arch)s, %(os)s, %(instanceType)s, %(capacityType)s' % this,
+    full: |||
+      %(withLocation)s,
+      %(arch)s,
+      %(os)s,
+      %(instanceType)s,
+      %(capacityType)s
+    ||| % this,
   },
 
   variables(config):: {
@@ -77,7 +93,7 @@ local query = variable.query;
     region:
       query.new(
         'region',
-        'label_values(karpenter_nodes_allocatable{%(base)s}, region)' % defaultFilters,
+        'label_values(karpenter_nodes_allocatable{%(cluster)s, %(job)s}, region)' % defaultFilters,
       ) +
       query.withDatasourceFromVariable(this.datasource) +
       query.withSort() +
@@ -142,7 +158,7 @@ local query = variable.query;
     capacityType:
       query.new(
         'capacity_type',
-        'label_values(karpenter_nodes_allocatable{%(base)s, %(region)s, %(zone)s, %(arch)s, %(os)s, %(instanceType)s}, capacity_type)' % defaultFilters,
+        'label_values(karpenter_nodes_allocatable{%(cluster)s, %(job)s, %(region)s, %(zone)s, %(arch)s, %(os)s, %(instanceType)s}, capacity_type)' % defaultFilters,
       ) +
       query.withDatasourceFromVariable(this.datasource) +
       query.withSort(1) +
@@ -155,7 +171,7 @@ local query = variable.query;
     nodepool:
       query.new(
         'nodepool',
-        'label_values(karpenter_nodes_allocatable{%(base)s, %(region)s, %(zone)s, %(arch)s, %(os)s, %(instanceType)s, %(capacityType)s}, nodepool)' % defaultFilters,
+        'label_values(karpenter_nodes_allocatable{%(cluster)s, %(job)s, %(region)s, %(zone)s, %(arch)s, %(os)s, %(instanceType)s, %(capacityType)s}, nodepool)' % defaultFilters,
       ) +
       query.withDatasourceFromVariable(this.datasource) +
       query.withSort(1) +
@@ -165,14 +181,10 @@ local query = variable.query;
       query.refresh.onLoad() +
       query.refresh.onTime(),
 
-    // Simplified variables for dashboards that don't need all filters
-    jobSimple:
-      this.job,
-
     nodepoolSimple:
       query.new(
         'nodepool',
-        'label_values(karpenter_nodepools_limit{%(base)s}, nodepool)' % defaultFilters,
+        'label_values(karpenter_nodes_allocatable{%(cluster)s, %(job)s}, nodepool)' % defaultFilters,
       ) +
       query.withDatasourceFromVariable(this.datasource) +
       query.withSort(1) +
