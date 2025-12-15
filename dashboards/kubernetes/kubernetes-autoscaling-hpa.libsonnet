@@ -9,10 +9,7 @@ local grid = g.util.grid;
 local tablePanel = g.panel.table;
 
 // Table
-local tbStandardOptions = tablePanel.standardOptions;
 local tbQueryOptions = tablePanel.queryOptions;
-local tbOverride = tbStandardOptions.override;
-local tbFieldConfig = tablePanel.fieldConfig;
 
 {
   grafanaDashboards+:: {

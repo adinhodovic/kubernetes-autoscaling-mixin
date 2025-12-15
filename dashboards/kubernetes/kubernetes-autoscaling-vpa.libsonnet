@@ -5,7 +5,6 @@ local util = import 'util.libsonnet';
 local dashboard = g.dashboard;
 local row = g.panel.row;
 local grid = g.util.grid;
-local prometheus = g.query.prometheus;
 
 local statPanel = g.panel.stat;
 local tablePanel = g.panel.table;

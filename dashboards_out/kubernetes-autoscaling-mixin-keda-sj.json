@@ -40,7 +40,12 @@
          "fieldConfig": {
             "defaults": {
                "custom": {
-                  "fillOpacity": 10
+                  "axisSoftMin": 0,
+                  "fillOpacity": 100,
+                  "lineWidth": 1,
+                  "stacking": {
+                     "mode": "normal"
+                  }
                },
                "unit": "short"
             },
@@ -78,8 +83,8 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "sum(\n  keda_resource_registered_total{\n    cluster=\"$cluster\",\n    job=~\"$job\",\n    namespace=~\"$operator_namespace\",\n    type=\"scaled_job\"\n  }\n) by (exported_namespace, type)\n",
-               "legendFormat": "{{ exported_namespace }} / {{ type }}"
+               "expr": "sum(\n  keda_resource_registered_total{\n    cluster=\"$cluster\",\njob=~\"$job\",\nnamespace=~\"$operator_namespace\"\n,\n    type=\"scaled_job\"\n  }\n) by (exported_namespace, type)\n",
+               "legendFormat": "{{ type }}"
             }
          ],
          "title": "Resources Registered by Namespace",
@@ -94,7 +99,12 @@
          "fieldConfig": {
             "defaults": {
                "custom": {
-                  "fillOpacity": 10
+                  "axisSoftMin": 0,
+                  "fillOpacity": 100,
+                  "lineWidth": 1,
+                  "stacking": {
+                     "mode": "normal"
+                  }
                },
                "unit": "short"
             },
@@ -132,7 +142,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "sum(\n  keda_trigger_registered_total{\n    cluster=\"$cluster\",\n    job=~\"$job\",\n    namespace=~\"$operator_namespace\"\n  }\n) by (type)\n",
+               "expr": "sum(\n  keda_trigger_registered_total{\n    cluster=\"$cluster\",\njob=~\"$job\",\nnamespace=~\"$operator_namespace\"\n\n  }\n) by (type)\n",
                "legendFormat": "{{ type }}"
             }
          ],
@@ -148,7 +158,12 @@
          "fieldConfig": {
             "defaults": {
                "custom": {
-                  "fillOpacity": 10
+                  "axisSoftMin": 0,
+                  "fillOpacity": 100,
+                  "lineWidth": 1,
+                  "stacking": {
+                     "mode": "normal"
+                  }
                },
                "unit": "short"
             },
@@ -186,8 +201,8 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "sum(\n  increase(\n    keda_scaled_job_errors_total{\n      cluster=\"$cluster\",\n      job=~\"$job\",\n      namespace=~\"$operator_namespace\",\n      exported_namespace=~\"$resource_namespace\"\n    }[$__rate_interval]\n  )\n) by (exported_namespace, scaledJob)\n",
-               "legendFormat": "{{ exported_namespace }} / {{ scaledJob }}"
+               "expr": "sum(\n  increase(\n    keda_scaled_job_errors_total{\n      cluster=\"$cluster\",\njob=~\"$job\",\nnamespace=~\"$operator_namespace\"\n,\nexported_namespace=~\"$resource_namespace\"\n\n    }[$__rate_interval]\n  )\n) by (exported_namespace, scaledJob)\n",
+               "legendFormat": "{{ scaledJob }}"
             }
          ],
          "title": "Scaled Jobs Errors",
@@ -202,7 +217,12 @@
          "fieldConfig": {
             "defaults": {
                "custom": {
-                  "fillOpacity": 10
+                  "axisSoftMin": 0,
+                  "fillOpacity": 100,
+                  "lineWidth": 1,
+                  "stacking": {
+                     "mode": "normal"
+                  }
                },
                "unit": "short"
             },
@@ -240,12 +260,92 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "sum(\n  increase(\n    keda_scaler_detail_errors_total{\n      cluster=\"$cluster\",\n      job=~\"$job\",\n      namespace=~\"$operator_namespace\",\n      exported_namespace=~\"$resource_namespace\",\n      type=\"scaledjob\"\n    }[$__rate_interval]\n  )\n) by (exported_namespace, scaledObject, scaler)\n",
-               "legendFormat": "{{ exported_namespace }} / {{ scaledObject }} / {{ scaler }}"
+               "expr": "sum(\n  increase(\n    keda_scaler_detail_errors_total{\n      cluster=\"$cluster\",\njob=~\"$job\",\nnamespace=~\"$operator_namespace\"\n,\nexported_namespace=~\"$resource_namespace\"\n,\n      type=\"scaledjob\"\n    }[$__rate_interval]\n  )\n) by (exported_namespace, scaledObject, scaler)\n",
+               "legendFormat": "{{ scaledObject }} / {{ scaler }}"
             }
          ],
          "title": "Scaler Detail Errors",
          "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "Current metric values for all scaled jobs.",
+         "fieldConfig": {
+            "defaults": {
+               "links": [
+                  {
+                     "targetBlank": true,
+                     "title": "Go to HPA",
+                     "url": "/d/this-needs-to-be-customized/kubernetes-compute-resources-workload?var-namespace=${__data.fields.exported_namespace}&var-type=ScaledJob&var-workload=${__data.fields.scaledObject}"
+                  }
+               ],
+               "thresholds": {
+                  "steps": [ ]
+               },
+               "unit": "short"
+            },
+            "overrides": [ ]
+         },
+         "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 13
+         },
+         "id": 6,
+         "options": {
+            "footer": {
+               "enablePagination": true
+            },
+            "sortBy": [
+               {
+                  "desc": true,
+                  "displayName": "Scaled Job"
+               }
+            ]
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "sum(\n  keda_scaler_metrics_value{\n    cluster=\"$cluster\",\njob=~\"$job\",\nnamespace=~\"$operator_namespace\"\n,\nexported_namespace=~\"$resource_namespace\"\n,\n    type=\"scaledjob\"\n  }\n) by (job, exported_namespace, scaledObject, scaler, metric)\n",
+               "format": "table",
+               "instant": true
+            }
+         ],
+         "title": "Scale Target Values",
+         "transformations": [
+            {
+               "id": "organize",
+               "options": {
+                  "excludeByName": {
+                     "Time": true,
+                     "job": true
+                  },
+                  "indexByName": {
+                     "exported_namespace": 1,
+                     "metric": 3,
+                     "scaledObject": 0,
+                     "scaler": 2,
+                     "value": 4
+                  },
+                  "renameByName": {
+                     "exported_namespace": "Resource Namespace",
+                     "metric": "Metric",
+                     "scaledObject": "Scaled Object",
+                     "scaler": "Scaler",
+                     "value": "Value"
+                  }
+               }
+            }
+         ],
+         "type": "table"
       },
       {
          "collapsed": false,
@@ -253,10 +353,10 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 13
+            "y": 21
          },
-         "id": 6,
-         "title": "Scaled Job Detail",
+         "id": 7,
+         "title": "Scaled Job $scaled_job / $scaler / $metric",
          "type": "row"
       },
       {
@@ -275,64 +375,10 @@
             "overrides": [ ]
          },
          "gridPos": {
-            "h": 6,
+            "h": 5,
             "w": 12,
             "x": 0,
-            "y": 14
-         },
-         "id": 7,
-         "options": {
-            "legend": {
-               "calcs": [
-                  "mean",
-                  "max"
-               ],
-               "displayMode": "table",
-               "placement": "right",
-               "showLegend": true,
-               "sortBy": "Mean",
-               "sortDesc": true
-            },
-            "tooltip": {
-               "mode": "multi",
-               "sort": "desc"
-            }
-         },
-         "pluginVersion": "v11.4.0",
-         "targets": [
-            {
-               "datasource": {
-                  "type": "prometheus",
-                  "uid": "$datasource"
-               },
-               "exemplar": false,
-               "expr": "sum(\n  keda_scaler_active{\n    cluster=\"$cluster\",\n    job=~\"$job\",\n    namespace=\"$operator_namespace\",\n    exported_namespace=\"$resource_namespace\",\n    type=\"scaledjob\",\n    scaledObject=\"$scaled_job\"\n  }\n) by (exported_namespace, scaledObject)\n",
-               "legendFormat": "{{ exported_namespace }} / {{ scaledObject }}"
-            }
-         ],
-         "title": "Scaled Job Active",
-         "type": "timeseries"
-      },
-      {
-         "datasource": {
-            "type": "prometheus",
-            "uid": "$datasource"
-         },
-         "description": "The rate of errors for the selected scaled job.",
-         "fieldConfig": {
-            "defaults": {
-               "custom": {
-                  "fillOpacity": 10
-               },
-               "unit": "short"
-            },
-            "overrides": [ ]
-         },
-         "gridPos": {
-            "h": 6,
-            "w": 12,
-            "x": 12,
-            "y": 14
+            "y": 22
          },
          "id": 8,
          "options": {
@@ -360,11 +406,11 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "sum(\n  increase(\n    keda_scaler_detail_errors_total{\n      cluster=\"$cluster\",\n      job=~\"$job\",\n      namespace=\"$operator_namespace\",\n      exported_namespace=\"$resource_namespace\",\n      type=\"scaledjob\",\n      scaledObject=\"$scaled_job\"\n    }[$__rate_interval]\n  )\n) by (exported_namespace, scaledObject)\n",
-               "legendFormat": "{{ exported_namespace }} / {{ scaledObject }}"
+               "expr": "sum(\n  keda_scaler_active{\n    cluster=\"$cluster\",\njob=~\"$job\",\nnamespace=~\"$operator_namespace\"\n,\nexported_namespace=~\"$resource_namespace\"\n,\ntype=\"scaledjob\",\nscaledObject=\"$scaled_job\"\n\n  }\n) by (exported_namespace, scaledObject)\n",
+               "legendFormat": "{{ scaledObject }}"
             }
          ],
-         "title": "Scaled Job Detail Errors",
+         "title": "Scaled Job Active",
          "type": "timeseries"
       },
       {
@@ -372,7 +418,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "The metric value for the selected scaled job.",
+         "description": "The rate of errors for the selected scaled job.",
          "fieldConfig": {
             "defaults": {
                "custom": {
@@ -383,10 +429,10 @@
             "overrides": [ ]
          },
          "gridPos": {
-            "h": 6,
+            "h": 5,
             "w": 12,
-            "x": 0,
-            "y": 20
+            "x": 12,
+            "y": 22
          },
          "id": 9,
          "options": {
@@ -414,11 +460,11 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "avg(\n  keda_scaler_metrics_value{\n    cluster=\"$cluster\",\n    job=~\"$job\",\n    namespace=\"$operator_namespace\",\n    exported_namespace=\"$resource_namespace\",\n    type=\"scaledjob\",\n    scaledObject=\"$scaled_job\",\n    scaler=\"$scaler\",\n    metric=\"$metric\"\n  }\n) by (exported_namespace, scaledObject, scaler, metric)\n",
-               "legendFormat": "{{ exported_namespace }} / {{ scaledObject }} / {{ scaler }} / {{ metric }}"
+               "expr": "sum(\n  increase(\n    keda_scaler_detail_errors_total{\n      cluster=\"$cluster\",\njob=~\"$job\",\nnamespace=~\"$operator_namespace\"\n,\nexported_namespace=~\"$resource_namespace\"\n,\ntype=\"scaledjob\",\nscaledObject=\"$scaled_job\"\n\n    }[$__rate_interval]\n  )\n) by (exported_namespace, scaledObject)\n",
+               "legendFormat": "{{ scaledObject }}"
             }
          ],
-         "title": "Scaled Job Metric Value",
+         "title": "Scaled Job Detail Errors",
          "type": "timeseries"
       },
       {
@@ -426,21 +472,26 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "The metric collection latency for the selected scaled job.",
+         "description": "The metric value for the selected scaled job.",
          "fieldConfig": {
             "defaults": {
                "custom": {
-                  "fillOpacity": 10
+                  "axisSoftMin": 0,
+                  "fillOpacity": 100,
+                  "lineWidth": 1,
+                  "stacking": {
+                     "mode": "normal"
+                  }
                },
-               "unit": "s"
+               "unit": "short"
             },
             "overrides": [ ]
          },
          "gridPos": {
-            "h": 6,
-            "w": 12,
-            "x": 12,
-            "y": 20
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 27
          },
          "id": 10,
          "options": {
@@ -468,37 +519,25 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "avg(\n  keda_scaler_metrics_latency_seconds{\n    cluster=\"$cluster\",\n    job=~\"$job\",\n    namespace=\"$operator_namespace\",\n    exported_namespace=\"$resource_namespace\",\n    type=\"scaledjob\",\n    scaledObject=\"$scaled_job\",\n    scaler=\"$scaler\",\n    metric=\"$metric\"\n  }\n) by (exported_namespace, scaledObject, scaler, metric)\n",
-               "legendFormat": "{{ exported_namespace }} / {{ scaledObject }} / {{ scaler }} / {{ metric }}"
+               "expr": "avg(\n  keda_scaler_metrics_value{\n    cluster=\"$cluster\",\njob=~\"$job\",\nnamespace=~\"$operator_namespace\"\n,\nexported_namespace=~\"$resource_namespace\"\n,\ntype=\"scaledjob\",\nscaledObject=\"$scaled_job\"\n,\nscaler=\"$scaler\"\n,\nmetric=\"$metric\"\n\n  }\n) by (exported_namespace, scaledObject, scaler, metric)\n",
+               "legendFormat": "{{ scaledObject }} / {{ scaler }} / {{ metric }}"
             }
          ],
-         "title": "Scaled Job Metric Latency",
+         "title": "Scaled Job Metric Value",
          "type": "timeseries"
-      },
-      {
-         "collapsed": false,
-         "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 26
-         },
-         "id": 11,
-         "title": "Scale Targets",
-         "type": "row"
       },
       {
          "datasource": {
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Current metric values for all scaled jobs.",
+         "description": "The metric collection latency for the selected scaled job.",
          "fieldConfig": {
             "defaults": {
-               "thresholds": {
-                  "steps": [ ]
+               "custom": {
+                  "fillOpacity": 10
                },
-               "unit": "short"
+               "unit": "s"
             },
             "overrides": [ ]
          },
@@ -506,12 +545,24 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 27
+            "y": 35
          },
-         "id": 12,
+         "id": 11,
          "options": {
-            "footer": {
-               "enablePagination": true
+            "legend": {
+               "calcs": [
+                  "mean",
+                  "max"
+               ],
+               "displayMode": "table",
+               "placement": "right",
+               "showLegend": true,
+               "sortBy": "Mean",
+               "sortDesc": true
+            },
+            "tooltip": {
+               "mode": "multi",
+               "sort": "desc"
             }
          },
          "pluginVersion": "v11.4.0",
@@ -521,14 +572,13 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  keda_scaler_metrics_value{\n    cluster=\"$cluster\",\n    job=~\"$job\",\n    namespace=~\"$operator_namespace\",\n    exported_namespace=~\"$resource_namespace\",\n    type=\"scaledjob\"\n  }\n) by (job, exported_namespace, scaledObject, scaler, metric)\n",
-               "format": "table",
-               "instant": true
+               "exemplar": false,
+               "expr": "avg(\n  keda_scaler_metrics_latency_seconds{\n    cluster=\"$cluster\",\njob=~\"$job\",\nnamespace=~\"$operator_namespace\"\n,\nexported_namespace=~\"$resource_namespace\"\n,\ntype=\"scaledjob\",\nscaledObject=\"$scaled_job\"\n,\nscaler=\"$scaler\"\n,\nmetric=\"$metric\"\n\n  }\n) by (exported_namespace, scaledObject, scaler, metric)\n",
+               "legendFormat": "{{ scaledObject }} / {{ scaler }} / {{ metric }}"
             }
          ],
-         "title": "Scale Target Values",
-         "transformations": [ ],
-         "type": "table"
+         "title": "Scaled Job Metric Latency",
+         "type": "timeseries"
       }
    ],
    "schemaVersion": 39,
@@ -570,6 +620,20 @@
                "uid": "${datasource}"
             },
             "includeAll": true,
+            "label": "Job",
+            "multi": true,
+            "name": "job",
+            "query": "label_values(keda_scaled_job_errors_total{cluster=\"$cluster\"}, job)",
+            "refresh": 2,
+            "sort": 1,
+            "type": "query"
+         },
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "${datasource}"
+            },
+            "includeAll": true,
             "label": "Operator Namespace",
             "multi": true,
             "name": "operator_namespace",
@@ -583,9 +647,7 @@
                "type": "prometheus",
                "uid": "${datasource}"
             },
-            "includeAll": true,
             "label": "Resource Namespace",
-            "multi": true,
             "name": "resource_namespace",
             "query": "label_values(keda_scaled_job_errors_total{cluster=\"$cluster\", job=~\"$job\", namespace=~\"$operator_namespace\"}, exported_namespace)",
             "refresh": 2,
@@ -629,7 +691,7 @@
             "label": "Metric",
             "multi": false,
             "name": "metric",
-            "query": "label_values(keda_scaler_active{cluster=\"$cluster\", job=~\"$job\", namespace=~\"$operator_namespace\", exported_namespace=\"$resource_namespace\", type=\"scaledjob\", scaledObject=~\"$scaled_job\", scaler=~\"$scaler\"}, metric)",
+            "query": "label_values(keda_scaler_active{cluster=\"$cluster\", job=~\"$job\", namespace=~\"$operator_namespace\", exported_namespace=\"$resource_namespace\", type=\"scaledjob\", scaledObject=\"$scaled_job\", scaler=\"$scaler\"}, metric)",
             "refresh": 2,
             "sort": 1,
             "type": "query"

@@ -3,7 +3,7 @@
   "rules":
   - "alert": "KarpenterCloudProviderErrors"
     "annotations":
-      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-kperf-jkwq/kubernetes-autoscaling-karpenter-performance"
+      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-kperf-jkwq1/kubernetes-autoscaling-karpenter-performance"
       "description": "The Karpenter provider {{ $labels.provider }} with the controller {{ $labels.controller }} has errors with the method {{ $labels.method }}."
       "summary": "Karpenter has Cloud Provider Errors."
     "expr": |
@@ -21,7 +21,7 @@
       "severity": "warning"
   - "alert": "KarpenterNodeClaimsTerminationDurationHigh"
     "annotations":
-      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-kact-jkwq/kubernetes-autoscaling-karpenter-activity"
+      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-kact-jkwq1j/kubernetes-autoscaling-karpenter-activity"
       "description": "The average node claim termination duration in Karpenter has exceeded 20 minutes for more than 15 minutes in nodepool {{ $labels.nodepool }}. This may indicate cloud provider issues or improper instance termination handling."
       "summary": "Karpenter Node Claims Termination Duration is High."
     "expr": |
@@ -45,7 +45,7 @@
       "severity": "warning"
   - "alert": "KarpenterNodepoolNearCapacity"
     "annotations":
-      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-kover-jkwq/kubernetes-autoscaling-karpenter-overview"
+      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-kover-jkwq1/kubernetes-autoscaling-karpenter-overview"
       "description": "The resource {{ $labels.resource_type }} in the Karpenter node pool {{ $labels.nodepool }} is nearing its limit. Consider scaling or adding resources."
       "summary": "Karpenter Nodepool near capacity."
     "expr": |
@@ -64,7 +64,7 @@
   "rules":
   - "alert": "ClusterAutoscalerNodeCountNearCapacity"
     "annotations":
-      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-ca-jkwq/kubernetes-autoscaling-cluster-autoscaler"
+      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-ca-jkwq1/kubernetes-autoscaling-cluster-autoscaler"
       "description": "The node count for the cluster autoscaler job {{ $labels.job }} is reaching max limit. Consider scaling node groups."
       "summary": "Cluster Autoscaler Node Count near Capacity."
     "expr": |
@@ -85,7 +85,7 @@
       "severity": "warning"
   - "alert": "ClusterAutoscalerUnschedulablePods"
     "annotations":
-      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-ca-jkwq/kubernetes-autoscaling-cluster-autoscaler"
+      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-ca-jkwq1/kubernetes-autoscaling-cluster-autoscaler"
       "description": "The cluster currently has unschedulable pods, indicating resource shortages. Consider adding more nodes or increasing node group capacity."
       "summary": "Pods Pending Scheduling - Cluster Node Group Scaling Required"
     "expr": |
@@ -102,7 +102,7 @@
   "rules":
   - "alert": "KedaScaledJobErrors"
     "annotations":
-      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-kedasj-jkwq/kubernetes-autoscaling-keda-scaled-job?var-scaled_job={{ $labels.scaledObject }}&var-resource_namespace={{ $labels.exported_namespace }}"
+      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-kedasj-jkwq1/kubernetes-autoscaling-keda-scaled-job?var-scaled_job={{ $labels.scaledObject }}&var-resource_namespace={{ $labels.exported_namespace }}"
       "description": "KEDA scaled jobs are experiencing errors. Check the scaled job {{ $labels.scaledObject }} in the namespace {{ $labels.exported_namespace }}."
       "summary": "Errors detected for KEDA scaled jobs."
     "expr": |
@@ -118,7 +118,7 @@
       "severity": "warning"
   - "alert": "KedaScaledObjectErrors"
     "annotations":
-      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-kedaso-jkwq/kubernetes-autoscaling-keda-scaled-object?var-scaled_object={{ $labels.scaledObject }}&var-resource_namespace={{ $labels.exported_namespace }}"
+      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-kedaso-jkwq1/kubernetes-autoscaling-keda-scaled-object?var-scaled_object={{ $labels.scaledObject }}&var-resource_namespace={{ $labels.exported_namespace }}"
       "description": "KEDA scaled objects are experiencing errors. Check the scaled object {{ $labels.scaledObject }} in the namespace {{ $labels.exported_namespace }}."
       "summary": "Errors detected for KEDA scaled objects."
     "expr": |
@@ -134,7 +134,7 @@
       "severity": "warning"
   - "alert": "KedaScalerLatencyHigh"
     "annotations":
-      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-kedaso-jkwq/kubernetes-autoscaling-keda-scaled-object?var-scaled_object={{ $labels.scaledObject }}&var-scaler={{ $labels.scaler }}"
+      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-kedaso-jkwq1/kubernetes-autoscaling-keda-scaled-object?var-scaled_object={{ $labels.scaledObject }}&var-scaler={{ $labels.scaler }}"
       "description": "Metric latency for scaler {{ $labels.scaler }} for the object {{ $labels.scaledObject }} has exceeded acceptable limits."
       "summary": "High latency for KEDA scaler metrics."
     "expr": |
@@ -148,7 +148,7 @@
       "severity": "warning"
   - "alert": "KedaScaledObjectPaused"
     "annotations":
-      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-kedaso-jkwq/kubernetes-autoscaling-keda-scaled-object?var-scaled_object={{ $labels.scaledObject }}&var-resource_namespace={{ $labels.exported_namespace }}"
+      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-kedaso-jkwq1/kubernetes-autoscaling-keda-scaled-object?var-scaled_object={{ $labels.scaledObject }}&var-resource_namespace={{ $labels.exported_namespace }}"
       "description": "The scaled object {{ $labels.scaledObject }} in namespace {{ $labels.exported_namespace }} is paused for longer than 25h. This may indicate a configuration issue or manual intervention."
       "summary": "KEDA scaled object is paused."
     "expr": |
@@ -162,7 +162,7 @@
       "severity": "warning"
   - "alert": "KedaScalerDetailErrors"
     "annotations":
-      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-kedaso-jkwq/kubernetes-autoscaling-keda-scaled-object?var-scaler={{ $labels.scaler }}&var-scaled_object={{ $labels.scaledObject }}"
+      "dashboard_url": "https://grafana.com/d/kubernetes-autoscaling-mixin-kedaso-jkwq1/kubernetes-autoscaling-keda-scaled-object?var-scaler={{ $labels.scaler }}&var-scaled_object={{ $labels.scaledObject }}"
       "description": "Errors have occurred in the KEDA scaler {{ $labels.scaler }}. Investigate the scaler for the {{ $labels.type }} {{ $labels.scaledObject }} in namespace {{ $labels.exported_namespace }}."
       "summary": "Errors detected in KEDA scaler."
     "expr": |

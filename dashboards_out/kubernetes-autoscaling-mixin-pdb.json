@@ -42,6 +42,7 @@
          "description": "Summary of all PDBs in the selected namespace.",
          "fieldConfig": {
             "defaults": {
+               "links": [ ],
                "thresholds": {
                   "steps": [ ]
                },

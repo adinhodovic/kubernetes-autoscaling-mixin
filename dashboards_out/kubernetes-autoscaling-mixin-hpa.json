@@ -227,6 +227,7 @@
          "description": "Configured metric targets for the HPA.",
          "fieldConfig": {
             "defaults": {
+               "links": [ ],
                "thresholds": {
                   "steps": [ ]
                },

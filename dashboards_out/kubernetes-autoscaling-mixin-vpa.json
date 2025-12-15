@@ -39,6 +39,7 @@
          "description": "CPU resource recommendations for VPAs.",
          "fieldConfig": {
             "defaults": {
+               "links": [ ],
                "thresholds": {
                   "steps": [ ]
                },
@@ -227,6 +228,7 @@
          "description": "Memory resource recommendations for VPAs.",
          "fieldConfig": {
             "defaults": {
+               "links": [ ],
                "thresholds": {
                   "steps": [ ]
                },

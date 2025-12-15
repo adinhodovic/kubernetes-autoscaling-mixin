@@ -28,7 +28,7 @@ local annotation = g.dashboard.annotation;
     karpenterOverviewDashboardUid: 'kubernetes-autoscaling-mixin-kover-jkwq1',
     karpenterActivityDashboardUid: 'kubernetes-autoscaling-mixin-kact-jkwq1j',
     karpenterPerformanceDashboardUid: 'kubernetes-autoscaling-mixin-kperf-jkwq1',
-    kedaScaledObjectDashboardUid: 'kubernetes-autoscaling-mixin-kedaso-jkwq1',
+    kedaScaledObjectDashboardUid: 'kubernetes-autoscaling-mixin-kedaso-j1',
     kedaScaledJobDashboardUid: 'kubernetes-autoscaling-mixin-kedasj-jkwq1',
 
     vpa: {
