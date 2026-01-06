@@ -491,122 +491,99 @@ local tbOverride = tbStandardOptions.override;
             ),
 
           nodeGroupDetailsTable:
-            local prometheus = g.query.prometheus;
-            tablePanel.new('Node Group Details') +
-            tablePanel.panelOptions.withDescription('Details of node groups in the cluster. Requires --emit-per-nodegroup-metrics flag.') +
-            tablePanel.queryOptions.withDatasource('prometheus', '$datasource') +
-            tablePanel.queryOptions.withTargets([
-              prometheus.new('$datasource', queries.nodeGroupMinNodes) +
-              prometheus.withFormat('table') +
-              prometheus.withInstant(true) +
-              prometheus.withRefId('MinNodes'),
-
-              prometheus.new('$datasource', queries.nodeGroupTargetNodes) +
-              prometheus.withFormat('table') +
-              prometheus.withInstant(true) +
-              prometheus.withRefId('Target'),
-
-              prometheus.new('$datasource', queries.nodeGroupMaxNodes) +
-              prometheus.withFormat('table') +
-              prometheus.withInstant(true) +
-              prometheus.withRefId('MaxNodes'),
-
-              prometheus.new('$datasource', queries.nodeGroupHealthiness) +
-              prometheus.withFormat('table') +
-              prometheus.withInstant(true) +
-              prometheus.withRefId('Healthy'),
-
-              prometheus.new('$datasource', queries.nodeGroupBackoffStatus) +
-              prometheus.withFormat('table') +
-              prometheus.withInstant(true) +
-              prometheus.withRefId('Backoff'),
-            ]) +
-            tablePanel.standardOptions.withUnit('short') +
-            tablePanel.options.footer.withEnablePagination(true) +
-            tablePanel.options.footer.withCountRows(true) +
-            tablePanel.options.withSortBy(
-              tablePanel.options.sortBy.withDisplayName('Group Name') +
-              tablePanel.options.sortBy.withDesc(false)
+            mixinUtils.dashboards.tablePanel(
+              'Node Group Details',
+              'short',
+              [
+                { expr: queries.nodeGroupMinNodes },
+                { expr: queries.nodeGroupTargetNodes },
+                { expr: queries.nodeGroupMaxNodes },
+                { expr: queries.nodeGroupHealthiness },
+                { expr: queries.nodeGroupBackoffStatus },
+              ],
+              description='Details of node groups in the cluster. Requires --emit-per-nodegroup-metrics flag.',
+              sortBy={ name: 'Group Name', desc: false },
+              transformations=[
+                tbQueryOptions.transformation.withId('merge'),
+                tbQueryOptions.transformation.withId('calculateField') +
+                tbQueryOptions.transformation.withOptions({
+                  alias: 'Utilization_Ratio',
+                  mode: 'binary',
+                  binary: {
+                    left: 'Value #B',
+                    operator: '/',
+                    right: 'Value #C',
+                  },
+                }),
+                tbQueryOptions.transformation.withId('calculateField') +
+                tbQueryOptions.transformation.withOptions({
+                  alias: 'Utilization',
+                  mode: 'binary',
+                  binary: {
+                    left: 'Utilization_Ratio',
+                    operator: '*',
+                    right: '100',
+                  },
+                }),
+                tbQueryOptions.transformation.withId('organize') +
+                tbQueryOptions.transformation.withOptions({
+                  includeByName: {
+                    node_group: true,
+                    'Value #A': true,
+                    'Value #B': true,
+                    'Value #C': true,
+                    Utilization: true,
+                    'Value #D': true,
+                    'Value #E': true,
+                  },
+                  renameByName: {
+                    node_group: 'Group Name',
+                    'Value #A': 'Min Nodes',
+                    'Value #B': 'Target',
+                    'Value #C': 'Max Nodes',
+                    'Value #D': 'Healthy',
+                    'Value #E': 'Backoff',
+                  },
+                  indexByName: {
+                    node_group: 0,
+                    'Value #A': 1,
+                    'Value #B': 2,
+                    'Value #C': 3,
+                    Utilization: 4,
+                    'Value #D': 5,
+                    'Value #E': 6,
+                  },
+                }),
+              ],
+              overrides=[
+                tbOverride.byName.new('Healthy') +
+                tbOverride.byName.withPropertiesFromOptions(
+                  tbStandardOptions.withMappings([
+                    tbStandardOptions.mapping.ValueMap.withType() +
+                    tbStandardOptions.mapping.ValueMap.withOptions({
+                      '0': { text: 'No' },
+                      '1': { text: 'Yes' },
+                    }),
+                  ])
+                ),
+                tbOverride.byName.new('Backoff') +
+                tbOverride.byName.withPropertiesFromOptions(
+                  tbStandardOptions.withMappings([
+                    tbStandardOptions.mapping.ValueMap.withType() +
+                    tbStandardOptions.mapping.ValueMap.withOptions({
+                      '0': { text: 'No' },
+                      '1': { text: 'Yes' },
+                    }),
+                  ])
+                ),
+                tbOverride.byName.new('Utilization') +
+                tbOverride.byName.withPropertiesFromOptions(
+                  tbStandardOptions.withUnit('percent') +
+                  tbStandardOptions.thresholds.withMode('absolute')
+                ),
+              ]
             ) +
-            tablePanel.queryOptions.withTransformations([
-              tbQueryOptions.transformation.withId('merge'),
-              tbQueryOptions.transformation.withId('calculateField') +
-              tbQueryOptions.transformation.withOptions({
-                alias: 'Utilization_Ratio',
-                mode: 'binary',
-                binary: {
-                  left: 'Value #Target',
-                  operator: '/',
-                  right: 'Value #MaxNodes',
-                },
-              }),
-              tbQueryOptions.transformation.withId('calculateField') +
-              tbQueryOptions.transformation.withOptions({
-                alias: 'Utilization',
-                mode: 'binary',
-                binary: {
-                  left: 'Utilization_Ratio',
-                  operator: '*',
-                  right: '100',
-                },
-              }),
-              tbQueryOptions.transformation.withId('organize') +
-              tbQueryOptions.transformation.withOptions({
-                includeByName: {
-                  node_group: true,
-                  'Value #MinNodes': true,
-                  'Value #Target': true,
-                  'Value #MaxNodes': true,
-                  Utilization: true,
-                  'Value #Healthy': true,
-                  'Value #Backoff': true,
-                },
-                renameByName: {
-                  node_group: 'Group Name',
-                  'Value #MinNodes': 'Min Nodes',
-                  'Value #Target': 'Target',
-                  'Value #MaxNodes': 'Max Nodes',
-                  'Value #Healthy': 'Healthy',
-                  'Value #Backoff': 'Backoff',
-                },
-                indexByName: {
-                  node_group: 0,
-                  'Value #MinNodes': 1,
-                  'Value #Target': 2,
-                  'Value #MaxNodes': 3,
-                  Utilization: 4,
-                  'Value #Healthy': 5,
-                  'Value #Backoff': 6,
-                },
-              }),
-            ]) +
-            tablePanel.standardOptions.withOverrides([
-              tbOverride.byName.new('Healthy') +
-              tbOverride.byName.withPropertiesFromOptions(
-                tbStandardOptions.withMappings([
-                  tbStandardOptions.mapping.ValueMap.withType() +
-                  tbStandardOptions.mapping.ValueMap.withOptions({
-                    '0': { text: 'No' },
-                    '1': { text: 'Yes' },
-                  }),
-                ])
-              ),
-              tbOverride.byName.new('Backoff') +
-              tbOverride.byName.withPropertiesFromOptions(
-                tbStandardOptions.withMappings([
-                  tbStandardOptions.mapping.ValueMap.withType() +
-                  tbStandardOptions.mapping.ValueMap.withOptions({
-                    '0': { text: 'No' },
-                    '1': { text: 'Yes' },
-                  }),
-                ])
-              ),
-              tbOverride.byName.new('Utilization') +
-              tbOverride.byName.withPropertiesFromOptions(
-                tbStandardOptions.withUnit('percent') +
-                tbStandardOptions.thresholds.withMode('absolute')
-              ),
-            ]),
+            tablePanel.options.footer.withCountRows(true),
         };
 
         local rows =

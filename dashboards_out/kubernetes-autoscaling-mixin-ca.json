@@ -864,6 +864,10 @@
          "description": "Details of node groups in the cluster. Requires --emit-per-nodegroup-metrics flag.",
          "fieldConfig": {
             "defaults": {
+               "links": [ ],
+               "thresholds": {
+                  "steps": [ ]
+               },
                "unit": "short"
             },
             "overrides": [
@@ -963,8 +967,7 @@
                },
                "expr": "min by (node_group) (\n  cluster_autoscaler_node_group_min_count{\n    cluster=\"$cluster\",\njob=~\"$job\"\n\n  }\n)\n",
                "format": "table",
-               "instant": true,
-               "refId": "MinNodes"
+               "instant": true
             },
             {
                "datasource": {
@@ -973,8 +976,7 @@
                },
                "expr": "avg by (node_group) (\n  cluster_autoscaler_node_group_target_count{\n    cluster=\"$cluster\",\njob=~\"$job\"\n\n  }\n)\n",
                "format": "table",
-               "instant": true,
-               "refId": "Target"
+               "instant": true
             },
             {
                "datasource": {
@@ -983,8 +985,7 @@
                },
                "expr": "max by (node_group) (\n  cluster_autoscaler_node_group_max_count{\n    cluster=\"$cluster\",\njob=~\"$job\"\n\n  }\n)\n",
                "format": "table",
-               "instant": true,
-               "refId": "MaxNodes"
+               "instant": true
             },
             {
                "datasource": {
@@ -993,8 +994,7 @@
                },
                "expr": "min by (node_group) (\n  cluster_autoscaler_node_group_healthiness{\n    cluster=\"$cluster\",\njob=~\"$job\"\n\n  }\n)\n",
                "format": "table",
-               "instant": true,
-               "refId": "Healthy"
+               "instant": true
             },
             {
                "datasource": {
@@ -1003,8 +1003,7 @@
                },
                "expr": "max by (node_group) (\n  cluster_autoscaler_node_group_backoff_status{\n    cluster=\"$cluster\",\njob=~\"$job\"\n\n  }\n)\n",
                "format": "table",
-               "instant": true,
-               "refId": "Backoff"
+               "instant": true
             }
          ],
          "title": "Node Group Details",
@@ -1017,9 +1016,9 @@
                "options": {
                   "alias": "Utilization_Ratio",
                   "binary": {
-                     "left": "Value #Target",
+                     "left": "Value #B",
                      "operator": "/",
-                     "right": "Value #MaxNodes"
+                     "right": "Value #C"
                   },
                   "mode": "binary"
                }
@@ -1041,28 +1040,28 @@
                "options": {
                   "includeByName": {
                      "Utilization": true,
-                     "Value #Backoff": true,
-                     "Value #Healthy": true,
-                     "Value #MaxNodes": true,
-                     "Value #MinNodes": true,
-                     "Value #Target": true,
+                     "Value #A": true,
+                     "Value #B": true,
+                     "Value #C": true,
+                     "Value #D": true,
+                     "Value #E": true,
                      "node_group": true
                   },
                   "indexByName": {
                      "Utilization": 4,
-                     "Value #Backoff": 6,
-                     "Value #Healthy": 5,
-                     "Value #MaxNodes": 3,
-                     "Value #MinNodes": 1,
-                     "Value #Target": 2,
+                     "Value #A": 1,
+                     "Value #B": 2,
+                     "Value #C": 3,
+                     "Value #D": 5,
+                     "Value #E": 6,
                      "node_group": 0
                   },
                   "renameByName": {
-                     "Value #Backoff": "Backoff",
-                     "Value #Healthy": "Healthy",
-                     "Value #MaxNodes": "Max Nodes",
-                     "Value #MinNodes": "Min Nodes",
-                     "Value #Target": "Target",
+                     "Value #A": "Min Nodes",
+                     "Value #B": "Target",
+                     "Value #C": "Max Nodes",
+                     "Value #D": "Healthy",
+                     "Value #E": "Backoff",
                      "node_group": "Group Name"
                   }
                }
