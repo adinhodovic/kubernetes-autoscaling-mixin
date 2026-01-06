@@ -44,6 +44,8 @@ local annotation = g.dashboard.annotation;
       clusterAutoscalerSelector: 'job="cluster-autoscaler"',
 
       nodeCountCapacityThreshold: 75,
+      // Enabled alert which uses aggregate cluster metrics that may include nodes not managed by CAS, which can result in false alerting.
+      nodeCountNearCapacityEnabled: true,
 
       // Enable per-node-group metrics for detailed capacity and health monitoring.
       // Requires --emit-per-nodegroup-metrics flag. See: https://github.com/kubernetes/autoscaler/blob/cluster-autoscaler-1.34.2/cluster-autoscaler/FAQ.md?plain=1#L1006

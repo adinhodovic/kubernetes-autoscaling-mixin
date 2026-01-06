@@ -86,33 +86,36 @@
       if $._config.clusterAutoscaler.enabled then {
         local clusterAutoscalerConfig = $._config.clusterAutoscaler + clusterLabel,
         name: 'cluster-autoscaler',
-        rules: [
-          {
-            alert: 'ClusterAutoscalerNodeCountNearCapacity',
-            annotations: {
-              summary: 'Cluster Autoscaler Node Count near Capacity.',
-              description: 'The node count for the cluster autoscaler job {{ $labels.job }} is reaching max limit. Consider scaling node groups.',
-              dashboard_url: $._config.clusterAutoscaler.clusterAutoscalerDashboardUrl + clusterVariableQueryString,
+        rules: (
+          if $._config.clusterAutoscaler.nodeCountNearCapacityEnabled then [
+            {
+              alert: 'ClusterAutoscalerNodeCountNearCapacity',
+              annotations: {
+                summary: 'Cluster Autoscaler Node Count near Capacity.',
+                description: 'The node count for the cluster autoscaler job {{ $labels.job }} is reaching max limit. Consider scaling node groups.',
+                dashboard_url: $._config.clusterAutoscaler.clusterAutoscalerDashboardUrl + clusterVariableQueryString,
+              },
+              expr: |||
+                sum (
+                  cluster_autoscaler_nodes_count{
+                    %(clusterAutoscalerSelector)s
+                  }
+                ) by (%(clusterLabel)s, namespace, job)
+                /
+                sum (
+                  cluster_autoscaler_max_nodes_count{
+                    %(clusterAutoscalerSelector)s
+                  }
+                ) by (%(clusterLabel)s, namespace, job)
+                * 100 > %(nodeCountCapacityThreshold)s
+              ||| % clusterAutoscalerConfig,
+              'for': '15m',
+              labels: {
+                severity: 'warning',
+              },
             },
-            expr: |||
-              sum (
-                cluster_autoscaler_nodes_count{
-                  %(clusterAutoscalerSelector)s
-                }
-              ) by (%(clusterLabel)s, namespace, job)
-              /
-              sum (
-                cluster_autoscaler_max_nodes_count{
-                  %(clusterAutoscalerSelector)s
-                }
-              ) by (%(clusterLabel)s, namespace, job)
-              * 100 > %(nodeCountCapacityThreshold)s
-            ||| % clusterAutoscalerConfig,
-            'for': '15m',
-            labels: {
-              severity: 'warning',
-            },
-          },
+          ] else []
+        ) + [
           {
             alert: 'ClusterAutoscalerUnschedulablePods',
             annotations: {
