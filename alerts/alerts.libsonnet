@@ -133,7 +133,104 @@
               severity: 'warning',
             },
           },
-        ],
+        ] + (
+          if $._config.clusterAutoscaler.nodeGroupMetricsEmitted then [
+            {
+              alert: 'ClusterAutoscalerNodeGroupAtCapacity',
+              annotations: {
+                summary: 'Cluster Autoscaler Node Group At Capacity',
+                description: 'Node group {{ $labels.node_group }} is above %(nodeGroupUtilizationThreshold)d%% expected capacity.' % clusterAutoscalerConfig,
+                dashboard_url: $._config.clusterAutoscaler.clusterAutoscalerDashboardUrl + clusterVariableQueryString,
+              },
+              expr: |||
+                (
+                  avg (
+                    cluster_autoscaler_node_group_target_count{
+                      %(clusterAutoscalerSelector)s
+                    }
+                  ) by (%(clusterLabel)s, namespace, job, node_group) /
+                  max (
+                    cluster_autoscaler_node_group_max_count{
+                      %(clusterAutoscalerSelector)s
+                    }
+                  ) by (%(clusterLabel)s, namespace, job, node_group)
+                  * 100
+                ) >= %(nodeGroupUtilizationThreshold)s
+              ||| % clusterAutoscalerConfig,
+              'for': '15m',
+              labels: {
+                severity: 'warning',
+              },
+            },
+            {
+              alert: 'ClusterAutoscalerAllNodeGroupsAtCapacity',
+              annotations: {
+                summary: 'All Cluster Autoscaler Node Groups At Capacity',
+                description: 'All node groups are above %(nodeGroupUtilizationThreshold)d%% expected capacity.' % clusterAutoscalerConfig,
+                dashboard_url: $._config.clusterAutoscaler.clusterAutoscalerDashboardUrl + clusterVariableQueryString,
+              },
+              expr: |||
+                count (
+                  (
+                    avg (
+                      cluster_autoscaler_node_group_target_count{
+                        %(clusterAutoscalerSelector)s
+                      }
+                    ) by (%(clusterLabel)s, namespace, job, node_group) /
+                    max (
+                      cluster_autoscaler_node_group_max_count{
+                        %(clusterAutoscalerSelector)s
+                      }
+                    ) by (%(clusterLabel)s, namespace, job, node_group)
+                    * 100
+                  ) < %(nodeGroupUtilizationThreshold)s
+                ) by (%(clusterLabel)s, namespace, job) == 0
+              ||| % clusterAutoscalerConfig,
+              'for': '10m',
+              labels: {
+                severity: 'critical',
+              },
+            },
+            {
+              alert: 'ClusterAutoscalerNodeGroupUnhealthy',
+              annotations: {
+                summary: 'Cluster Autoscaler Node Group Unhealthy',
+                description: 'Node group {{ $labels.node_group }} is unhealthy.',
+                dashboard_url: $._config.clusterAutoscaler.clusterAutoscalerDashboardUrl + clusterVariableQueryString,
+              },
+              expr: |||
+                max (
+                  cluster_autoscaler_node_group_healthiness{
+                    %(clusterAutoscalerSelector)s
+                  }
+                ) by (%(clusterLabel)s, namespace, job, node_group) == 0
+              ||| % clusterAutoscalerConfig,
+              'for': '15m',
+              labels: {
+                severity: 'warning',
+              },
+            },
+            {
+              alert: 'ClusterAutoscalerNoHealthyNodeGroups',
+              annotations: {
+                summary: 'No Healthy Cluster Autoscaler Node Groups',
+                description: 'No node groups are healthy.',
+                dashboard_url: $._config.clusterAutoscaler.clusterAutoscalerDashboardUrl + clusterVariableQueryString,
+              },
+              expr: |||
+                sum (
+                  cluster_autoscaler_node_group_healthiness{
+                    %(clusterAutoscalerSelector)s
+                  }
+                ) by (%(clusterLabel)s, namespace, job) == 0
+              ||| % clusterAutoscalerConfig,
+              'for': '5m',
+              labels: {
+                severity: 'critical',
+              },
+            },
+          ] else []
+        ),
       },
       if $._config.keda.enabled then {
         local kedaConfig = $._config.keda + clusterLabel,

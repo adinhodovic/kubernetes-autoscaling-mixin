@@ -45,6 +45,9 @@ local annotation = g.dashboard.annotation;
 
       nodeCountCapacityThreshold: 75,
 
+      nodeGroupMetricsEmitted: false,
+      nodeGroupUtilizationThreshold: 95,
+
       clusterAutoscalerDashboardUrl: '%s/d/%s/kubernetes-autoscaling-cluster-autoscaler' % [this.grafanaUrl, this.clusterAutoscalerDashboardUid],
     },
 
