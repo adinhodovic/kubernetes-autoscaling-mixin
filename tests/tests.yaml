@@ -101,6 +101,129 @@ tests:
               summary: "Pods Pending Scheduling - Cluster Node Group Scaling Required"
               description: "The cluster currently has unschedulable pods, indicating resource shortages. Consider adding more nodes or increasing node group capacity."
               dashboard_url: "https://grafana.com/d/kubernetes-autoscaling-mixin-ca-jkwq/kubernetes-autoscaling-cluster-autoscaler"
+  # Cluster Autoscaler - Node Group
+  - interval: 1m
+    input_series:
+      - series: 'cluster_autoscaler_node_group_target_count{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-1"}'
+        values: "96x16"
+      - series: 'cluster_autoscaler_node_group_max_count{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-1"}'
+        values: "100x16"
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: ClusterAutoscalerNodeGroupAtCapacity
+        exp_alerts:
+          - exp_labels:
+              cluster: test-cluster
+              namespace: autoscaler
+              job: cluster-autoscaler
+              node_group: ng-1
+              severity: warning
+            exp_annotations:
+              summary: "Cluster Autoscaler Node Group At Capacity"
+              description: "Node group ng-1 is above 95% expected capacity."
+              dashboard_url: "https://grafana.com/d/kubernetes-autoscaling-mixin-ca-jkwq/kubernetes-autoscaling-cluster-autoscaler"
+  - interval: 1m
+    input_series:
+      - series: 'cluster_autoscaler_node_group_target_count{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-1"}'
+        values: "80x16"
+      - series: 'cluster_autoscaler_node_group_max_count{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-1"}'
+        values: "100x16"
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: ClusterAutoscalerNodeGroupAtCapacity
+        exp_alerts: []
+  - interval: 1m
+    input_series:
+      - series: 'cluster_autoscaler_node_group_target_count{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-1"}'
+        values: "96x11"
+      - series: 'cluster_autoscaler_node_group_max_count{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-1"}'
+        values: "100x11"
+      - series: 'cluster_autoscaler_node_group_target_count{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-2"}'
+        values: "98x11"
+      - series: 'cluster_autoscaler_node_group_max_count{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-2"}'
+        values: "100x11"
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: ClusterAutoscalerAllNodeGroupsAtCapacity
+        exp_alerts:
+          - exp_labels:
+              cluster: test-cluster
+              namespace: autoscaler
+              job: cluster-autoscaler
+              severity: critical
+            exp_annotations:
+              summary: "All Cluster Autoscaler Node Groups At Capacity"
+              description: "All node groups are above 95% expected capacity."
+              dashboard_url: "https://grafana.com/d/kubernetes-autoscaling-mixin-ca-jkwq/kubernetes-autoscaling-cluster-autoscaler"
+  - interval: 1m
+    input_series:
+      - series: 'cluster_autoscaler_node_group_target_count{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-1"}'
+        values: "96x11"
+      - series: 'cluster_autoscaler_node_group_max_count{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-1"}'
+        values: "100x11"
+      - series: 'cluster_autoscaler_node_group_target_count{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-2"}'
+        values: "50x11"
+      - series: 'cluster_autoscaler_node_group_max_count{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-2"}'
+        values: "100x11"
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: ClusterAutoscalerAllNodeGroupsAtCapacity
+        exp_alerts: []
+  - interval: 1m
+    input_series:
+      - series: 'cluster_autoscaler_node_group_healthiness{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-1"}'
+        values: "0x16"
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: ClusterAutoscalerNodeGroupUnhealthy
+        exp_alerts:
+          - exp_labels:
+              cluster: test-cluster
+              namespace: autoscaler
+              job: cluster-autoscaler
+              node_group: ng-1
+              severity: warning
+            exp_annotations:
+              summary: "Cluster Autoscaler Node Group Unhealthy"
+              description: "Node group ng-1 is unhealthy."
+              dashboard_url: "https://grafana.com/d/kubernetes-autoscaling-mixin-ca-jkwq/kubernetes-autoscaling-cluster-autoscaler"
+  - interval: 1m
+    input_series:
+      - series: 'cluster_autoscaler_node_group_healthiness{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-1"}'
+        values: "1x16"
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: ClusterAutoscalerNodeGroupUnhealthy
+        exp_alerts: []
+  - interval: 1m
+    input_series:
+      - series: 'cluster_autoscaler_node_group_healthiness{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-1"}'
+        values: "0x6"
+      - series: 'cluster_autoscaler_node_group_healthiness{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-2"}'
+        values: "0x6"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ClusterAutoscalerNoHealthyNodeGroups
+        exp_alerts:
+          - exp_labels:
+              cluster: test-cluster
+              namespace: autoscaler
+              job: cluster-autoscaler
+              severity: critical
+            exp_annotations:
+              summary: "No Healthy Cluster Autoscaler Node Groups"
+              description: "No node groups are healthy."
+              dashboard_url: "https://grafana.com/d/kubernetes-autoscaling-mixin-ca-jkwq/kubernetes-autoscaling-cluster-autoscaler"
+  - interval: 1m
+    input_series:
+      - series: 'cluster_autoscaler_node_group_healthiness{cluster="test-cluster",namespace="autoscaler", job="cluster-autoscaler", node_group="ng-1"}'
+        values: "1x6"
+      - series: 'cluster_autoscaler_node_group_healthiness{cluster="test-cluster", namespace="autoscaler", job="cluster-autoscaler", node_group="ng-2"}'
+        values: "0x6"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ClusterAutoscalerNoHealthyNodeGroups
+        exp_alerts: []
   # KEDA
   - interval: 1m
     input_series:

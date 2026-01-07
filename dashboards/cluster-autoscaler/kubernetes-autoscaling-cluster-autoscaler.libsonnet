@@ -10,6 +10,12 @@ local grid = g.util.grid;
 local gauge = g.panel.gauge;
 local gaStandardOptions = gauge.standardOptions;
 
+// Table panel helpers
+local tablePanel = g.panel.table;
+local tbQueryOptions = tablePanel.queryOptions;
+local tbStandardOptions = tablePanel.standardOptions;
+local tbOverride = tbStandardOptions.override;
+
 {
   grafanaDashboards+:: {
     'kubernetes-autoscaling-mixin-ca.json':
@@ -174,6 +180,108 @@ local gaStandardOptions = gauge.standardOptions;
               )
             )
           ||| % defaultFilters,
+
+          totalNodeGroups: |||
+            count(
+              cluster_autoscaler_node_group_min_count{
+                %(base)s
+              }
+            )
+          ||| % defaultFilters,
+
+          atCapacityNodeGroupsPercent: |||
+            round(
+              count(
+                (
+                  avg by (node_group) (
+                    cluster_autoscaler_node_group_target_count{
+                      %(base)s
+                    }
+                  ) /
+                  max by (node_group) (
+                    cluster_autoscaler_node_group_max_count{
+                      %(base)s
+                    }
+                  )
+                ) >= 0.99
+              ) /
+              count(
+                cluster_autoscaler_node_group_max_count{
+                  %(base)s
+                }
+              ) * 100
+            ) or vector(0)
+          ||| % defaultFilters,
+
+          healthyNodeGroupsPercent: |||
+            round(
+              sum(
+                cluster_autoscaler_node_group_healthiness{
+                  %(base)s
+                }
+              ) /
+              count(
+                cluster_autoscaler_node_group_healthiness{
+                  %(base)s
+                }
+              ) * 100
+            )
+          ||| % defaultFilters,
+
+          backoffNodeGroupsPercent: |||
+            round(
+              sum(
+                cluster_autoscaler_node_group_backoff_status{
+                  %(base)s
+                }
+              ) /
+              count(
+                cluster_autoscaler_node_group_backoff_status{
+                  %(base)s
+                }
+              ) * 100
+            )
+          ||| % defaultFilters,
+
+          nodeGroupMinNodes: |||
+            min by (node_group) (
+              cluster_autoscaler_node_group_min_count{
+                %(base)s
+              }
+            )
+          ||| % defaultFilters,
+
+          nodeGroupTargetNodes: |||
+            avg by (node_group) (
+              cluster_autoscaler_node_group_target_count{
+                %(base)s
+              }
+            )
+          ||| % defaultFilters,
+
+          nodeGroupMaxNodes: |||
+            max by (node_group) (
+              cluster_autoscaler_node_group_max_count{
+                %(base)s
+              }
+            )
+          ||| % defaultFilters,
+
+          nodeGroupHealthiness: |||
+            min by (node_group) (
+              cluster_autoscaler_node_group_healthiness{
+                %(base)s
+              }
+            )
+          ||| % defaultFilters,
+
+          nodeGroupBackoffStatus: |||
+            max by (node_group) (
+              cluster_autoscaler_node_group_backoff_status{
+                %(base)s
+              }
+            )
+          ||| % defaultFilters,
         };
 
         local panels = {
@@ -319,6 +427,163 @@ local gaStandardOptions = gauge.standardOptions;
               description='The autoscaling activity in the cluster.',
               fillOpacity=0,
             ),
+
+          totalNodeGroupsStat:
+            mixinUtils.dashboards.statPanel(
+              'Total',
+              'short',
+              queries.totalNodeGroups,
+              description='The total number of node groups in the cluster.',
+            ),
+
+          atCapacityNodeGroupsGauge:
+            mixinUtils.dashboards.gaugePanel(
+              'At Capacity',
+              'percent',
+              queries.atCapacityNodeGroupsPercent,
+              description='The percentage of node groups at capacity.',
+              min=0,
+              max=100,
+              steps=[
+                gaStandardOptions.threshold.step.withValue(0) +
+                gaStandardOptions.threshold.step.withColor('green'),
+                gaStandardOptions.threshold.step.withValue(20) +
+                gaStandardOptions.threshold.step.withColor('yellow'),
+                gaStandardOptions.threshold.step.withValue(50) +
+                gaStandardOptions.threshold.step.withColor('red'),
+              ],
+            ),
+
+          healthyNodeGroupsGauge:
+            mixinUtils.dashboards.gaugePanel(
+              'Healthy',
+              'percent',
+              queries.healthyNodeGroupsPercent,
+              description='The percentage of healthy node groups in the cluster.',
+              min=0,
+              max=100,
+              steps=[
+                gaStandardOptions.threshold.step.withValue(0) +
+                gaStandardOptions.threshold.step.withColor('red'),
+                gaStandardOptions.threshold.step.withValue(50) +
+                gaStandardOptions.threshold.step.withColor('yellow'),
+                gaStandardOptions.threshold.step.withValue(80) +
+                gaStandardOptions.threshold.step.withColor('green'),
+              ],
+            ),
+
+          backoffNodeGroupsGauge:
+            mixinUtils.dashboards.gaugePanel(
+              'Backoff',
+              'percent',
+              queries.backoffNodeGroupsPercent,
+              description='The percentage of node groups in backoff state.',
+              min=0,
+              max=100,
+              steps=[
+                gaStandardOptions.threshold.step.withValue(0) +
+                gaStandardOptions.threshold.step.withColor('green'),
+                gaStandardOptions.threshold.step.withValue(20) +
+                gaStandardOptions.threshold.step.withColor('yellow'),
+                gaStandardOptions.threshold.step.withValue(50) +
+                gaStandardOptions.threshold.step.withColor('red'),
+              ],
+            ),
+
+          nodeGroupDetailsTable:
+            mixinUtils.dashboards.tablePanel(
+              'Node Group Details',
+              'short',
+              [
+                { expr: queries.nodeGroupMinNodes, refId: 'MinNodes' },
+                { expr: queries.nodeGroupTargetNodes, refId: 'Target' },
+                { expr: queries.nodeGroupMaxNodes, refId: 'MaxNodes' },
+                { expr: queries.nodeGroupHealthiness, refId: 'Healthy' },
+                { expr: queries.nodeGroupBackoffStatus, refId: 'Backoff' },
+              ],
+              description='Details of node groups in the cluster. Requires --emit-per-nodegroup-metrics flag.',
+              sortBy={ name: 'Group Name', desc: false },
+              transformations=[
+                tbQueryOptions.transformation.withId('merge'),
+                tbQueryOptions.transformation.withId('calculateField') +
+                tbQueryOptions.transformation.withOptions({
+                  alias: 'Utilization_Ratio',
+                  mode: 'binary',
+                  binary: {
+                    left: 'Value #Target',
+                    operator: '/',
+                    right: 'Value #MaxNodes',
+                  },
+                }),
+                tbQueryOptions.transformation.withId('calculateField') +
+                tbQueryOptions.transformation.withOptions({
+                  alias: 'Utilization',
+                  mode: 'binary',
+                  binary: {
+                    left: 'Utilization_Ratio',
+                    operator: '*',
+                    right: '100',
+                  },
+                }),
+                tbQueryOptions.transformation.withId('organize') +
+                tbQueryOptions.transformation.withOptions({
+                  includeByName: {
+                    node_group: true,
+                    'Value #MinNodes': true,
+                    'Value #Target': true,
+                    'Value #MaxNodes': true,
+                    Utilization: true,
+                    'Value #Healthy': true,
+                    'Value #Backoff': true,
+                  },
+                  renameByName: {
+                    node_group: 'Group Name',
+                    'Value #MinNodes': 'Min Nodes',
+                    'Value #Target': 'Target',
+                    'Value #MaxNodes': 'Max Nodes',
+                    'Value #Healthy': 'Healthy',
+                    'Value #Backoff': 'Backoff',
+                  },
+                  indexByName: {
+                    node_group: 0,
+                    'Value #MinNodes': 1,
+                    'Value #Target': 2,
+                    'Value #MaxNodes': 3,
+                    Utilization: 4,
+                    'Value #Healthy': 5,
+                    'Value #Backoff': 6,
+                  },
+                }),
+              ],
+              overrides=[
+                tbOverride.byName.new('Healthy') +
+                tbOverride.byName.withPropertiesFromOptions(
+                  tbStandardOptions.withMappings([
+                    tbStandardOptions.mapping.ValueMap.withType() +
+                    tbStandardOptions.mapping.ValueMap.withOptions({
+                      '0': { text: 'No' },
+                      '1': { text: 'Yes' },
+                    }),
+                  ])
+                ),
+                tbOverride.byName.new('Backoff') +
+                tbOverride.byName.withPropertiesFromOptions(
+                  tbStandardOptions.withMappings([
+                    tbStandardOptions.mapping.ValueMap.withType() +
+                    tbStandardOptions.mapping.ValueMap.withOptions({
+                      '0': { text: 'No' },
+                      '1': { text: 'Yes' },
+                    }),
+                  ])
+                ),
+                tbOverride.byName.new('Utilization') +
+                tbOverride.byName.withPropertiesFromOptions(
+                  tbStandardOptions.withUnit('percent') +
+                  tbStandardOptions.thresholds.withMode('absolute')
+                ),
+              ]
+            ) +
+            tablePanel.options.footer.withCountRows(true),
         };
 
         local rows =
@@ -367,7 +632,35 @@ local gaStandardOptions = gauge.standardOptions;
             panelWidth=24,
             panelHeight=8,
             startY=14
-          );
+          ) +
+          if $._config.clusterAutoscaler.nodeGroupMetricsEmitted then
+            [
+              row.new('Node Group Overview') +
+              row.gridPos.withX(0) +
+              row.gridPos.withY(22) +
+              row.gridPos.withW(24) +
+              row.gridPos.withH(1),
+            ] +
+            grid.makeGrid(
+              [
+                panels.totalNodeGroupsStat,
+                panels.atCapacityNodeGroupsGauge,
+                panels.healthyNodeGroupsGauge,
+                panels.backoffNodeGroupsGauge,
+              ],
+              panelWidth=6,
+              panelHeight=4,
+              startY=23
+            ) +
+            grid.makeGrid(
+              [
+                panels.nodeGroupDetailsTable,
+              ],
+              panelWidth=24,
+              panelHeight=12,
+              startY=27
+            )
+          else [];
 
         mixinUtils.dashboards.bypassDashboardValidation +
         dashboard.new(
