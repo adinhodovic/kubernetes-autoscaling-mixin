@@ -61,6 +61,7 @@ local annotation = g.dashboard.annotation;
 
       nodepoolCapacityThreshold: 75,
       nodeclaimTerminationThreshold: 60 * 20,
+      schedulerQueueDepthThreshold: 50,
 
       karpenterOverviewDashboardUrl: '%s/d/%s/kubernetes-autoscaling-karpenter-overview' % [this.grafanaUrl, this.karpenterOverviewDashboardUid],
       karpenterActivityDashboardUrl: '%s/d/%s/kubernetes-autoscaling-karpenter-activity' % [this.grafanaUrl, this.karpenterActivityDashboardUid],

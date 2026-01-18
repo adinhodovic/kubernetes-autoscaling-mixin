@@ -110,6 +110,29 @@ local stStandardOptions = stat.standardOptions;
             )
           ||| % defaultFilters,
 
+          // Scheduler
+          schedulerQueueDepth: |||
+            sum(
+              karpenter_scheduler_queue_depth{
+                %(base)s
+              }
+            ) by (job)
+          ||| % defaultFilters,
+
+          schedulerSchedulingDurationP50: |||
+            histogram_quantile(0.50,
+              sum(
+                rate(
+                  karpenter_scheduler_scheduling_duration_seconds_bucket{
+                    %(base)s
+                  }[$__rate_interval]
+                ) > 0
+              ) by (job, le)
+            )
+          ||| % defaultFilters,
+          schedulerSchedulingDurationP95: std.strReplace(queries.schedulerSchedulingDurationP50, '0.50', '0.95'),
+          schedulerSchedulingDurationP99: std.strReplace(queries.schedulerSchedulingDurationP50, '0.50', '0.99'),
+
           // Interruption Queue
           interruptionReceivedMessages: |||
             sum(
@@ -134,7 +157,7 @@ local stStandardOptions = stat.standardOptions;
           interuptionDurationP50: |||
             histogram_quantile(0.50,
               sum(
-                irate(
+                rate(
                   karpenter_interruption_message_queue_duration_seconds_bucket{
                     %(base)s
                   }[$__rate_interval]
@@ -142,30 +165,8 @@ local stStandardOptions = stat.standardOptions;
               ) by (job, le)
             )
           ||| % defaultFilters,
-
-          interuptionDurationP95: |||
-            histogram_quantile(0.95,
-              sum(
-                irate(
-                  karpenter_interruption_message_queue_duration_seconds_bucket{
-                    %(base)s
-                  }[$__rate_interval]
-                ) > 0
-              ) by (job, le)
-            )
-          ||| % defaultFilters,
-
-          interuptionDurationP99: |||
-            histogram_quantile(0.99,
-              sum(
-                irate(
-                  karpenter_interruption_message_queue_duration_seconds_bucket{
-                    %(base)s
-                  }[$__rate_interval]
-                ) > 0
-              ) by (job, le)
-            )
-          ||| % defaultFilters,
+          interuptionDurationP95: std.strReplace(queries.interuptionDurationP50, '0.50', '0.95'),
+          interuptionDurationP99: std.strReplace(queries.interuptionDurationP50, '0.50', '0.99'),
 
           // Work Queue
           workQueueDepth: |||
@@ -361,6 +362,37 @@ local stStandardOptions = stat.standardOptions;
               description='The duration for pods to start up.',
             ),
 
+          // Scheduler
+          schedulerQueueDepthTimeSeries:
+            mixinUtils.dashboards.timeSeriesPanel(
+              'Scheduler Queue Depth',
+              'short',
+              queries.schedulerQueueDepth,
+              'Queue Depth',
+              description='The number of pending pods waiting to be scheduled.',
+            ),
+
+          schedulerSchedulingDurationTimeSeries:
+            mixinUtils.dashboards.timeSeriesPanel(
+              'Scheduler Scheduling Duration',
+              's',
+              [
+                {
+                  expr: queries.schedulerSchedulingDurationP50,
+                  legend: 'P50',
+                },
+                {
+                  expr: queries.schedulerSchedulingDurationP95,
+                  legend: 'P95',
+                },
+                {
+                  expr: queries.schedulerSchedulingDurationP99,
+                  legend: 'P99',
+                },
+              ],
+              description='The duration to simulate pod scheduling.',
+            ),
+
           // Interruption Queue
           interruptionReceivedMessagesTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
@@ -509,9 +541,25 @@ local stStandardOptions = stat.standardOptions;
             startY=7
           ) +
           [
-            row.new('Interruption Queue') +
+            row.new('Scheduler') +
             row.gridPos.withX(0) +
             row.gridPos.withY(13) +
+            row.gridPos.withW(24) +
+            row.gridPos.withH(1),
+          ] +
+          grid.makeGrid(
+            [
+              panels.schedulerQueueDepthTimeSeries,
+              panels.schedulerSchedulingDurationTimeSeries,
+            ],
+            panelWidth=12,
+            panelHeight=6,
+            startY=14
+          ) +
+          [
+            row.new('Interruption Queue') +
+            row.gridPos.withX(0) +
+            row.gridPos.withY(20) +
             row.gridPos.withW(24) +
             row.gridPos.withH(1),
           ] +
@@ -523,12 +571,12 @@ local stStandardOptions = stat.standardOptions;
             ],
             panelWidth=8,
             panelHeight=6,
-            startY=14
+            startY=21
           ) +
           [
             row.new('Work Queue') +
             row.gridPos.withX(0) +
-            row.gridPos.withY(20) +
+            row.gridPos.withY(27) +
             row.gridPos.withW(24) +
             row.gridPos.withH(1),
           ] +
@@ -540,12 +588,12 @@ local stStandardOptions = stat.standardOptions;
             ],
             panelWidth=8,
             panelHeight=6,
-            startY=21
+            startY=28
           ) +
           [
             row.new('Controller') +
             row.gridPos.withX(0) +
-            row.gridPos.withY(27) +
+            row.gridPos.withY(34) +
             row.gridPos.withW(24) +
             row.gridPos.withH(1),
           ] +
@@ -556,7 +604,7 @@ local stStandardOptions = stat.standardOptions;
             ],
             panelWidth=24,
             panelHeight=8,
-            startY=28
+            startY=35
           );
 
         mixinUtils.dashboards.bypassDashboardValidation +

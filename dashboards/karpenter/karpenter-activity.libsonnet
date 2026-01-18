@@ -49,6 +49,47 @@ local grid = g.util.grid;
             )
           ||| % defaultFilters,
 
+          // NodeClaim Activity
+          nodeClaimsCreatedByNodePool: |||
+            round(
+              sum(
+                increase(
+                  karpenter_nodeclaims_created_total{
+                    %(base)s,
+                    %(nodepool)s
+                  }[$__rate_interval]
+                )
+              ) by (nodepool)
+            )
+          ||| % defaultFilters,
+
+          nodeClaimsTerminatedByNodePool: |||
+            round(
+              sum(
+                increase(
+                  karpenter_nodeclaims_terminated_total{
+                    %(base)s,
+                    %(nodepool)s
+                  }[$__rate_interval]
+                )
+              ) by (nodepool)
+            )
+          ||| % defaultFilters,
+
+          nodeClaimsTerminationP50Duration: |||
+            histogram_quantile(0.50,
+              sum(
+                rate(
+                  karpenter_nodeclaims_termination_duration_seconds_bucket{
+                    %(base)s
+                  }[$__rate_interval]
+                )
+              ) by (job, le)
+            )
+          ||| % defaultFilters,
+          nodeClaimsTerminationP95Duration: std.strReplace(queries.nodeClaimsTerminationP50Duration, '0.50', '0.95'),
+          nodeClaimsTerminationP99Duration: std.strReplace(queries.nodeClaimsTerminationP50Duration, '0.50', '0.99'),
+
           nodesVoluntaryDisruptionDecisions: |||
             round(
               sum(
@@ -70,6 +111,32 @@ local grid = g.util.grid;
               ) by (reason)
             )
           ||| % defaultFilters,
+
+          nodesVoluntaryDisruptionQueueFailures: |||
+            round(
+              sum(
+                increase(
+                  karpenter_voluntary_disruption_queue_failures_total{
+                    %(base)s
+                  }[$__rate_interval]
+                )
+              ) by (job)
+            )
+          ||| % defaultFilters,
+
+          nodesVoluntaryDisruptionEvaluationP50Duration: |||
+            histogram_quantile(0.50,
+              sum(
+                rate(
+                  karpenter_voluntary_disruption_decision_evaluation_duration_seconds_bucket{
+                    %(base)s
+                  }[$__rate_interval]
+                )
+              ) by (job, le)
+            )
+          ||| % defaultFilters,
+          nodesVoluntaryDisruptionEvaluationP95Duration: std.strReplace(queries.nodesVoluntaryDisruptionEvaluationP50Duration, '0.50', '0.95'),
+          nodesVoluntaryDisruptionEvaluationP99Duration: std.strReplace(queries.nodesVoluntaryDisruptionEvaluationP50Duration, '0.50', '0.99'),
 
           nodesDisrupted: |||
             round(
@@ -145,6 +212,49 @@ local grid = g.util.grid;
               stack='normal'
             ),
 
+          // NodeClaim Activity
+          nodeClaimsCreatedByNodePoolTimeSeries:
+            mixinUtils.dashboards.timeSeriesPanel(
+              'NodeClaims Created by Node Pool',
+              'short',
+              queries.nodeClaimsCreatedByNodePool,
+              '{{ nodepool }}',
+              description='The number of nodeclaims created by node pool.',
+              stack='normal'
+            ),
+
+          nodeClaimsTerminatedByNodePoolTimeSeries:
+            mixinUtils.dashboards.timeSeriesPanel(
+              'NodeClaims Terminated by Node Pool',
+              'short',
+              queries.nodeClaimsTerminatedByNodePool,
+              '{{ nodepool }}',
+              description='The number of nodeclaims terminated by node pool.',
+              stack='normal'
+            ),
+
+          nodeClaimsTerminationDurationTimeSeries:
+            mixinUtils.dashboards.timeSeriesPanel(
+              'NodeClaim Termination Duration',
+              's',
+              [
+                {
+                  expr: queries.nodeClaimsTerminationP50Duration,
+                  legend: 'P50',
+                },
+                {
+                  expr: queries.nodeClaimsTerminationP95Duration,
+                  legend: 'P95',
+                },
+                {
+                  expr: queries.nodeClaimsTerminationP99Duration,
+                  legend: 'P99',
+                },
+              ],
+              description='The duration to terminate nodeclaims.',
+              fillOpacity=0
+            ),
+
           nodesVoluntaryDisruptionDecisionsTimeSeries:
             mixinUtils.dashboards.timeSeriesPanel(
               'Node Disruption Decisions by Reason and Decision',
@@ -163,6 +273,37 @@ local grid = g.util.grid;
               '{{ reason }}',
               description='The number of nodes eligible for voluntary disruption by reason.',
               stack='normal'
+            ),
+
+          nodesVoluntaryDisruptionQueueFailuresTimeSeries:
+            mixinUtils.dashboards.timeSeriesPanel(
+              'Voluntary Disruption Queue Failures',
+              'short',
+              queries.nodesVoluntaryDisruptionQueueFailures,
+              'Queue Failures',
+              description='The number of failed voluntary disruption attempts.',
+            ),
+
+          nodesVoluntaryDisruptionEvaluationDurationTimeSeries:
+            mixinUtils.dashboards.timeSeriesPanel(
+              'Voluntary Disruption Evaluation Duration',
+              's',
+              [
+                {
+                  expr: queries.nodesVoluntaryDisruptionEvaluationP50Duration,
+                  legend: 'P50',
+                },
+                {
+                  expr: queries.nodesVoluntaryDisruptionEvaluationP95Duration,
+                  legend: 'P95',
+                },
+                {
+                  expr: queries.nodesVoluntaryDisruptionEvaluationP99Duration,
+                  legend: 'P99',
+                },
+              ],
+              description='The duration to evaluate voluntary disruption decisions.',
+              fillOpacity=0
             ),
 
           nodesDisruptedTimeSeries:
@@ -226,6 +367,37 @@ local grid = g.util.grid;
             panelHeight=6,
             startY=1
           ) +
+          [
+            row.new('NodeClaim Activity') +
+            row.gridPos.withX(0) +
+            row.gridPos.withY(7) +
+            row.gridPos.withW(24) +
+            row.gridPos.withH(1),
+          ] +
+          grid.makeGrid(
+            [
+              panels.nodeClaimsCreatedByNodePoolTimeSeries,
+              panels.nodeClaimsTerminatedByNodePoolTimeSeries,
+            ],
+            panelWidth=12,
+            panelHeight=6,
+            startY=8
+          ) +
+          grid.makeGrid(
+            [
+              panels.nodeClaimsTerminationDurationTimeSeries,
+            ],
+            panelWidth=24,
+            panelHeight=6,
+            startY=14
+          ) +
+          [
+            row.new('Disruption Activity') +
+            row.gridPos.withX(0) +
+            row.gridPos.withY(20) +
+            row.gridPos.withW(24) +
+            row.gridPos.withH(1),
+          ] +
           grid.makeGrid(
             [
               panels.nodesVoluntaryDisruptionDecisionsTimeSeries,
@@ -233,7 +405,16 @@ local grid = g.util.grid;
             ],
             panelWidth=12,
             panelHeight=6,
-            startY=7
+            startY=21
+          ) +
+          grid.makeGrid(
+            [
+              panels.nodesVoluntaryDisruptionQueueFailuresTimeSeries,
+              panels.nodesVoluntaryDisruptionEvaluationDurationTimeSeries,
+            ],
+            panelWidth=12,
+            panelHeight=6,
+            startY=27
           ) +
           grid.makeGrid(
             [
@@ -241,12 +422,12 @@ local grid = g.util.grid;
             ],
             panelWidth=24,
             panelHeight=6,
-            startY=13
+            startY=33
           ) +
           [
             row.new('Pod Activity') +
             row.gridPos.withX(0) +
-            row.gridPos.withY(19) +
+            row.gridPos.withY(39) +
             row.gridPos.withW(24) +
             row.gridPos.withH(1),
           ] +
@@ -257,7 +438,7 @@ local grid = g.util.grid;
             ],
             panelWidth=12,
             panelHeight=6,
-            startY=20
+            startY=40
           );
 
         mixinUtils.dashboards.bypassDashboardValidation +

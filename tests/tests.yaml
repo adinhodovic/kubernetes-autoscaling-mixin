@@ -66,6 +66,54 @@ tests:
               summary: "Karpenter Node Claims Termination Duration is High."
               description: "The average node claim termination duration in Karpenter has exceeded 20 minutes for more than 15 minutes in nodepool nodepool-a. This may indicate cloud provider issues or improper instance termination handling."
               dashboard_url: "https://grafana.com/d/kubernetes-autoscaling-mixin-kact-jkwq/kubernetes-autoscaling-karpenter-activity"
+  - interval: 1m
+    input_series:
+      - series: 'karpenter_cluster_state_synced{namespace="karpenter", job="karpenter"}'
+        values: "0x16"
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: KarpenterClusterStateNotSynced
+        exp_alerts:
+          - exp_labels:
+              namespace: karpenter
+              job: karpenter
+              severity: warning
+            exp_annotations:
+              summary: "Karpenter Cluster State Not Synced."
+              description: "The Karpenter cluster state is not synced. This indicates Karpenter cannot properly track cluster resources and may fail to provision or deprovision nodes correctly."
+              dashboard_url: "https://grafana.com/d/kubernetes-autoscaling-mixin-kperf-jkwq/kubernetes-autoscaling-karpenter-performance"
+  - interval: 1m
+    input_series:
+      - series: 'karpenter_cluster_state_synced{namespace="karpenter", job="karpenter"}'
+        values: "1x16"
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: KarpenterClusterStateNotSynced
+        exp_alerts: []
+  - interval: 1m
+    input_series:
+      - series: 'karpenter_scheduler_queue_depth{namespace="karpenter", job="karpenter"}'
+        values: "60x16"
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: KarpenterSchedulerQueueDepthHigh
+        exp_alerts:
+          - exp_labels:
+              namespace: karpenter
+              job: karpenter
+              severity: warning
+            exp_annotations:
+              summary: "Karpenter Scheduler Queue Depth High."
+              description: "The Karpenter scheduler has 60 pods waiting to be scheduled. This may indicate provisioning issues or insufficient capacity."
+              dashboard_url: "https://grafana.com/d/kubernetes-autoscaling-mixin-kperf-jkwq/kubernetes-autoscaling-karpenter-performance"
+  - interval: 1m
+    input_series:
+      - series: 'karpenter_scheduler_queue_depth{namespace="karpenter", job="karpenter"}'
+        values: "40x16"
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: KarpenterSchedulerQueueDepthHigh
+        exp_alerts: []
   # Cluster Autoscaler
   - interval: 1m
     input_series:

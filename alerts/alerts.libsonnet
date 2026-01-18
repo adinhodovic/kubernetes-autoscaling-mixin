@@ -81,6 +81,44 @@
               severity: 'warning',
             },
           },
+          {
+            alert: 'KarpenterClusterStateNotSynced',
+            annotations: {
+              summary: 'Karpenter Cluster State Not Synced.',
+              description: 'The Karpenter cluster state is not synced. This indicates Karpenter cannot properly track cluster resources and may fail to provision or deprovision nodes correctly.',
+              dashboard_url: $._config.karpenter.karpenterPerformanceDashboardUrl + clusterVariableQueryString,
+            },
+            expr: |||
+              sum(
+                karpenter_cluster_state_synced{
+                  %(karpenterSelector)s
+                }
+              ) by (%(clusterLabel)s, namespace, job) == 0
+            ||| % karpenterConfig,
+            'for': '15m',
+            labels: {
+              severity: 'warning',
+            },
+          },
+          {
+            alert: 'KarpenterSchedulerQueueDepthHigh',
+            annotations: {
+              summary: 'Karpenter Scheduler Queue Depth High.',
+              description: 'The Karpenter scheduler has {{ $value }} pods waiting to be scheduled. This may indicate provisioning issues or insufficient capacity.',
+              dashboard_url: $._config.karpenter.karpenterPerformanceDashboardUrl + clusterVariableQueryString,
+            },
+            expr: |||
+              sum(
+                karpenter_scheduler_queue_depth{
+                  %(karpenterSelector)s
+                }
+              ) by (%(clusterLabel)s, namespace, job) > %(schedulerQueueDepthThreshold)s
+            ||| % karpenterConfig,
+            'for': '15m',
+            labels: {
+              severity: 'warning',
+            },
+          },
         ],
       },
       if $._config.clusterAutoscaler.enabled then {
