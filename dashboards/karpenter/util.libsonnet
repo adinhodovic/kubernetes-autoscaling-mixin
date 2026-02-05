@@ -64,15 +64,16 @@ local query = variable.query;
       },
 
     cluster:
-      query.new(
-        config.clusterLabel,
-        'label_values(kube_pod_info{%(kubeStateMetricsSelector)s}, cluster)' % config,
-      ) +
+      query.new('cluster') +
       query.withDatasourceFromVariable(this.datasource) +
-      query.withSort() +
+      query.queryTypes.withLabelValues(
+        config.clusterLabel,
+        'kube_pod_info{%(kubeStateMetricsSelector)s}' % config,
+      ) +
       query.generalOptions.withLabel('Cluster') +
       query.refresh.onLoad() +
       query.refresh.onTime() +
+      query.withSort() +
       (
         if config.showMultiCluster
         then query.generalOptions.showOnDashboard.withLabelAndValue()
