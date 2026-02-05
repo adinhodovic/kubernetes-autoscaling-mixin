@@ -82,15 +82,16 @@ local query = variable.query;
       },
 
     cluster:
-      query.new(
-        config.clusterLabel,
-        'label_values(keda_build_info{}, cluster)' % config,
-      ) +
+      query.new('cluster') +
       query.withDatasourceFromVariable(this.datasource) +
-      query.withSort() +
+      query.queryTypes.withLabelValues(
+        config.clusterLabel,
+        'keda_build_info{}',
+      ) +
       query.generalOptions.withLabel('Cluster') +
       query.refresh.onLoad() +
       query.refresh.onTime() +
+      query.withSort() +
       (
         if config.showMultiCluster
         then query.generalOptions.showOnDashboard.withLabelAndValue()
