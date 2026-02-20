@@ -7,9 +7,9 @@ local row = g.panel.row;
 local grid = g.util.grid;
 
 {
-  grafanaDashboards+:: {
-    'kubernetes-autoscaling-mixin-karpenter-act.json':
-      if !$._config.karpenter.enabled then {} else
+  grafanaDashboards+::
+    if $._config.karpenter.enabled then {
+      'kubernetes-autoscaling-mixin-karpenter-act.json':
 
         local defaultVariables = util.variables($._config);
 
@@ -462,5 +462,5 @@ local grid = g.util.grid;
         dashboard.withAnnotations(
           mixinUtils.dashboards.annotations($._config, defaultFilters)
         ),
-  },
+    } else {},
 }

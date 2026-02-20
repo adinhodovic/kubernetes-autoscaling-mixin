@@ -11,9 +11,9 @@ local stat = g.panel.stat;
 local stStandardOptions = stat.standardOptions;
 
 {
-  grafanaDashboards+:: {
-    'kubernetes-autoscaling-mixin-karpenter-perf.json':
-      if !$._config.karpenter.enabled then {} else
+  grafanaDashboards+::
+    if $._config.karpenter.enabled then {
+      'kubernetes-autoscaling-mixin-karpenter-perf.json':
 
         local defaultVariables = util.variables($._config);
 
@@ -628,5 +628,5 @@ local stStandardOptions = stat.standardOptions;
         dashboard.withAnnotations(
           mixinUtils.dashboards.annotations($._config, defaultFilters)
         ),
-  },
+    } else {},
 }

@@ -16,9 +16,9 @@ local tbOverride = tbStandardOptions.override;
 local tbFieldConfig = tablePanel.fieldConfig;
 
 {
-  grafanaDashboards+:: {
-    'kubernetes-autoscaling-mixin-vpa.json':
-      if !$._config.vpa.enabled then {} else
+  grafanaDashboards+::
+    if $._config.vpa.enabled then {
+      'kubernetes-autoscaling-mixin-vpa.json':
 
         local defaultVariables = util.variables($._config);
 
@@ -564,5 +564,5 @@ local tbFieldConfig = tablePanel.fieldConfig;
           mixinUtils.dashboards.dashboardLinks('Kubernetes / Autoscaling', $._config, dropdown=true)
         ) +
         dashboard.withPanels(rows),
-  },
+    } else {},
 }

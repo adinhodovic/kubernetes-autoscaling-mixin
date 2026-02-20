@@ -16,9 +16,9 @@ local tbFieldConfig = tablePanel.fieldConfig;
 
 {
   local dashboardName = 'karpenter-over',
-  grafanaDashboards+:: {
-    ['kubernetes-autoscaling-mixin-%s.json' % dashboardName]:
-      if !$._config.karpenter.enabled then {} else
+  grafanaDashboards+::
+    if $._config.karpenter.enabled then {
+      ['kubernetes-autoscaling-mixin-%s.json' % dashboardName]:
 
         local defaultVariables = util.variables($._config);
 
@@ -995,5 +995,5 @@ local tbFieldConfig = tablePanel.fieldConfig;
         dashboard.withAnnotations(
           mixinUtils.dashboards.annotations($._config, defaultFilters)
         ),
-  },
+    } else {},
 }
