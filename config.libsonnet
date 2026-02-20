@@ -1,6 +1,3 @@
-local g = import 'github.com/grafana/grafonnet/gen/grafonnet-latest/main.libsonnet';
-local annotation = g.dashboard.annotation;
-
 {
   _config+:: {
     local this = self,
@@ -92,18 +89,9 @@ local annotation = g.dashboard.annotation;
       enabled: false,
       name: 'Custom Annotation',
       datasource: '-- Grafana --',
-      iconColor: 'green',
+      iconColor: 'blue',
       tags: [],
+      type: 'tags',
     },
-
-    customAnnotation:: if $._config.annotation.enabled then
-      annotation.withName($._config.annotation.name) +
-      annotation.withIconColor($._config.annotation.iconColor) +
-      annotation.withHide(false) +
-      annotation.datasource.withUid($._config.annotation.datasource) +
-      annotation.target.withMatchAny(true) +
-      annotation.target.withTags($._config.annotation.tags) +
-      annotation.target.withType('tags')
-    else {},
   },
 }
