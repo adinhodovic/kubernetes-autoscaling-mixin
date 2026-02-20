@@ -13,9 +13,9 @@ local tbQueryOptions = tablePanel.queryOptions;
 local tbPanelOptions = tablePanel.panelOptions;
 
 {
-  grafanaDashboards+:: {
-    'kubernetes-autoscaling-mixin-keda-so.json':
-      if !$._config.keda.enabled then {} else
+  grafanaDashboards+::
+    if $._config.keda.enabled then {
+      'kubernetes-autoscaling-mixin-keda-so.json':
 
         local defaultVariables = util.variables($._config);
 
@@ -351,5 +351,5 @@ local tbPanelOptions = tablePanel.panelOptions;
           mixinUtils.dashboards.dashboardLinks('Kubernetes / Autoscaling', $._config, dropdown=true)
         ) +
         dashboard.withPanels(rows),
-  },
+    } else {},
 }

@@ -17,9 +17,9 @@ local tbStandardOptions = tablePanel.standardOptions;
 local tbOverride = tbStandardOptions.override;
 
 {
-  grafanaDashboards+:: {
-    'kubernetes-autoscaling-mixin-ca.json':
-      if !$._config.clusterAutoscaler.enabled then {} else
+  grafanaDashboards+::
+    if $._config.clusterAutoscaler.enabled then {
+      'kubernetes-autoscaling-mixin-ca.json':
 
         local defaultVariables = util.variables($._config);
 
@@ -683,5 +683,5 @@ local tbOverride = tbStandardOptions.override;
         dashboard.withAnnotations(
           mixinUtils.dashboards.annotations($._config, defaultFilters)
         ),
-  },
+    } else {},
 }
