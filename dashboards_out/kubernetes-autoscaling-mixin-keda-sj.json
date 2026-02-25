@@ -279,7 +279,7 @@
                   {
                      "targetBlank": true,
                      "title": "Go to Scaled Job",
-                     "url": "/d/this-needs-to-be-customized/kubernetes-compute-resources-workload?var-namespace=${__data.fields.exported_namespace}&var-type=ScaledJob&var-workload=${__data.fields.scaledObject}"
+                     "url": "/d/this-needs-to-be-customized/kubernetes-compute-resources-workload?var-cluster=${__data.fields.cluster}&var-namespace=${__data.fields.exported_namespace}&var-type=ScaledJob&var-workload=${__data.fields.scaledObject}"
                   }
                ],
                "thresholds": {
@@ -287,7 +287,20 @@
                },
                "unit": "short"
             },
-            "overrides": [ ]
+            "overrides": [
+               {
+                  "matcher": {
+                     "id": "byName",
+                     "options": "cluster"
+                  },
+                  "properties": [
+                     {
+                        "id": "custom.hideFrom.viz",
+                        "value": true
+                     }
+                  ]
+               }
+            ]
          },
          "gridPos": {
             "h": 8,

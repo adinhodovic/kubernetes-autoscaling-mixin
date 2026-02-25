@@ -11,6 +11,7 @@ local tablePanel = g.panel.table;
 // Table
 local tbQueryOptions = tablePanel.queryOptions;
 local tbPanelOptions = tablePanel.panelOptions;
+local tbStandardOptions = tablePanel.standardOptions;
 
 {
   grafanaDashboards+::
@@ -86,7 +87,7 @@ local tbPanelOptions = tablePanel.panelOptions;
                 %(withResourceNamespace)s,
                 type="scaledobject"
               }
-            ) by (job, exported_namespace, scaledObject, scaler, metric)
+            ) by (cluster, job, exported_namespace, scaledObject, scaler, metric)
           ||| % defaultFilters,
 
           scaledObjectPaused: |||
@@ -220,9 +221,13 @@ local tbPanelOptions = tablePanel.panelOptions;
               links=[
                 tbPanelOptions.link.withTitle('Go to HPA') +
                 tbPanelOptions.link.withUrl(
-                  '/d/%s/kubernetes-autoscaling-horizontal-pod-autoscaler?var-namespace=${__data.fields.namespace}&var-hpa=keda-hpa-${__data.fields.scaledObject}&var-metric_name=${__data.fields.metric}' % $._config.hpaDashboardUid
+                  '/d/%s/kubernetes-autoscaling-horizontal-pod-autoscaler?var-cluster=${__data.fields.cluster}&var-namespace=${__data.fields.namespace}&var-hpa=keda-hpa-${__data.fields.scaledObject}&var-metric_name=${__data.fields.metric}' % $._config.hpaDashboardUid
                 ) +
                 tbPanelOptions.link.withTargetBlank(true),
+              ],
+              overrides=[
+                tbStandardOptions.override.byName.new('cluster') +
+                tbStandardOptions.override.byName.withProperty('custom.hideFrom.viz', true)
               ]
             ),
 

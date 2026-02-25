@@ -13,6 +13,10 @@
     // Opt-in to multiCluster dashboards by overriding this and the clusterLabel.
     showMultiCluster: false,
     clusterLabel: 'cluster',
+    // Allow selecting multiple cluster values?
+    allowMultiClusterSelection: true,
+    // Include the 'all' value in cluster selector?
+    includeAllValue: true,
 
     kubeStateMetricsSelector: 'job=~"kube-state-metrics"',
 
