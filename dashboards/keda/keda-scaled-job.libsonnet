@@ -11,6 +11,7 @@ local tablePanel = g.panel.table;
 // Table
 local tbQueryOptions = tablePanel.queryOptions;
 local tbPanelOptions = tablePanel.panelOptions;
+local tbStandardOptions = tablePanel.standardOptions;
 
 {
   grafanaDashboards+::
@@ -77,7 +78,7 @@ local tbPanelOptions = tablePanel.panelOptions;
                 %(withResourceNamespace)s,
                 type="scaledjob"
               }
-            ) by (job, exported_namespace, scaledObject, scaler, metric)
+            ) by (cluster, job, exported_namespace, scaledObject, scaler, metric)
           ||| % defaultFilters,
 
           scaledJobActive: |||
@@ -193,10 +194,20 @@ local tbPanelOptions = tablePanel.panelOptions;
               links=[
                 tbPanelOptions.link.withTitle('Go to Scaled Job') +
                 tbPanelOptions.link.withUrl(
-                  '/d/%s/kubernetes-compute-resources-workload?var-namespace=${__data.fields.exported_namespace}&var-type=ScaledJob&var-workload=${__data.fields.scaledObject}' % $._config.keda.k8sResourcesWorkloadDashboardUid
+                  '/d/%s/kubernetes-compute-resources-workload?var-cluster=${__data.fields.cluster}&var-namespace=${__data.fields.exported_namespace}&var-type=ScaledJob&var-workload=${__data.fields.scaledObject}' % $._config.keda.k8sResourcesWorkloadDashboardUid
                 ) +
                 tbPanelOptions.link.withTargetBlank(true),
-              ]
+              ],
+              overrides=(
+                if std.all([$._config.showMultiCluster, !$._config.multiClusterAllowMultipleSelection])
+                then
+                  [
+                    tbStandardOptions.override.byName.new('cluster') +
+                    tbStandardOptions.override.byName.withProperty('custom.hideFrom.viz', true),
+                  ]
+                else
+                  []
+              )
             ),
 
           scaledJobActiveTimeSeries:
