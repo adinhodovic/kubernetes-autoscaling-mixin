@@ -346,20 +346,7 @@
                },
                "unit": "short"
             },
-            "overrides": [
-               {
-                  "matcher": {
-                     "id": "byName",
-                     "options": "cluster"
-                  },
-                  "properties": [
-                     {
-                        "id": "custom.hideFrom.viz",
-                        "value": true
-                     }
-                  ]
-               }
-            ]
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 8,

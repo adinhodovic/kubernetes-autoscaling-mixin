@@ -225,10 +225,16 @@ local tbStandardOptions = tablePanel.standardOptions;
                 ) +
                 tbPanelOptions.link.withTargetBlank(true),
               ],
-              overrides=[
-                tbStandardOptions.override.byName.new('cluster') +
-                tbStandardOptions.override.byName.withProperty('custom.hideFrom.viz', true)
-              ]
+              overrides=(
+                if $._config.showMultiCluster && $._config.allowMultiClusterSelection
+                then
+                  [
+                    tbStandardOptions.override.byName.new('cluster') +
+                    tbStandardOptions.override.byName.withProperty('custom.hideFrom.viz', true)
+                  ]
+                else
+                  []
+              )
             ),
 
           scaledObjectPausedTimeSeries:
