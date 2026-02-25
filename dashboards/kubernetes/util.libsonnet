@@ -105,7 +105,7 @@ local query = variable.query;
         if config.showMultiCluster
         then
           query.generalOptions.showOnDashboard.withLabelAndValue() +
-          query.selectionOptions.withMulti(value=config.allowMultiClusterSelection) +
+          query.selectionOptions.withMulti(value=config.multiClusterAllowMultipleSelection) +
           query.selectionOptions.withIncludeAll(value=config.includeAllValue)
         else query.generalOptions.showOnDashboard.withNothing()
       ),

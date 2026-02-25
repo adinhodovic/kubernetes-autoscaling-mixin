@@ -226,7 +226,7 @@ local tbStandardOptions = tablePanel.standardOptions;
                 tbPanelOptions.link.withTargetBlank(true),
               ],
               overrides=(
-                if std.all([$._config.showMultiCluster, !$._config.allowMultiClusterSelection])
+                if std.all([$._config.showMultiCluster, !$._config.multiClusterAllowMultipleSelection])
                 then
                   [
                     tbStandardOptions.override.byName.new('cluster') +
