@@ -327,7 +327,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  keda_scaler_metrics_value{\n    cluster=\"$cluster\",\njob=~\"$job\",\nnamespace=~\"$operator_namespace\"\n,\nexported_namespace=~\"$resource_namespace\"\n,\n    type=\"scaledjob\"\n  }\n) by (job, exported_namespace, scaledObject, scaler, metric)\n",
+               "expr": "sum(\n  keda_scaler_metrics_value{\n    cluster=\"$cluster\",\njob=~\"$job\",\nnamespace=~\"$operator_namespace\"\n,\nexported_namespace=~\"$resource_namespace\"\n,\n    type=\"scaledjob\"\n  }\n) by (cluster, job, exported_namespace, scaledObject, scaler, metric)\n",
                "format": "table",
                "instant": true
             }

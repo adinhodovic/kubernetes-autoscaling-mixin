@@ -78,7 +78,7 @@ local tbStandardOptions = tablePanel.standardOptions;
                 %(withResourceNamespace)s,
                 type="scaledjob"
               }
-            ) by (job, exported_namespace, scaledObject, scaler, metric)
+            ) by (cluster, job, exported_namespace, scaledObject, scaler, metric)
           ||| % defaultFilters,
 
           scaledJobActive: |||
