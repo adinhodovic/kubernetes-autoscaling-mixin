@@ -203,7 +203,7 @@ local tbStandardOptions = tablePanel.standardOptions;
                 then
                   [
                     tbStandardOptions.override.byName.new('cluster') +
-                    tbStandardOptions.override.byName.withProperty('custom.hideFrom.viz', true)
+                    tbStandardOptions.override.byName.withProperty('custom.hideFrom.viz', true),
                   ]
                 else
                   []
