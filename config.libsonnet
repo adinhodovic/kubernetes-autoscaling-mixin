@@ -14,9 +14,9 @@
     showMultiCluster: false,
     clusterLabel: 'cluster',
     // Allow selecting multiple cluster values?
-    multiClusterAllowsMultipleSelection: true,
+    multiClusterAllowsMultipleSelection: false,
     // Include the 'all' value in cluster selector?
-    multiClusterIncludeAllValue: true,
+    multiClusterIncludeAllValue: false,
 
     kubeStateMetricsSelector: 'job=~"kube-state-metrics"',
 
