@@ -100,13 +100,12 @@ local query = variable.query;
       query.refresh.onLoad() +
       query.refresh.onTime() +
       query.withSort() +
-      query.selectionOptions.withMulti(config.vpa.clusterAggregation) +
       (
         if config.showMultiCluster
         then
           query.generalOptions.showOnDashboard.withLabelAndValue() +
-          query.selectionOptions.withMulti(value=config.multiClusterAllowMultipleSelection) +
-          query.selectionOptions.withIncludeAll(value=config.includeAllValue)
+          query.selectionOptions.withMulti(config.vpa.clusterAggregation) +
+          query.selectionOptions.withIncludeAll(value=config.multiClusterIncludeAllValue)
         else query.generalOptions.showOnDashboard.withNothing()
       ),
 
