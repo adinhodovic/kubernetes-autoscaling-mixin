@@ -29,6 +29,7 @@
     karpenterOverviewDashboardUid: 'kubernetes-autoscaling-mixin-kover-jkwq',
     karpenterActivityDashboardUid: 'kubernetes-autoscaling-mixin-kact-jkwq',
     karpenterPerformanceDashboardUid: 'kubernetes-autoscaling-mixin-kperf-jkwq',
+    karpenterCostsDashboardUid: 'kubernetes-autoscaling-mixin-kcost-jkwq',
     kedaScaledObjectDashboardUid: 'kubernetes-autoscaling-mixin-kedaso-jkwq',
     kedaScaledJobDashboardUid: 'kubernetes-autoscaling-mixin-kedasj-jkwq',
 
@@ -67,6 +68,7 @@
       karpenterOverviewDashboardUrl: '%s/d/%s/kubernetes-autoscaling-karpenter-overview' % [this.grafanaUrl, this.karpenterOverviewDashboardUid],
       karpenterActivityDashboardUrl: '%s/d/%s/kubernetes-autoscaling-karpenter-activity' % [this.grafanaUrl, this.karpenterActivityDashboardUid],
       karpenterPerformanceDashboardUrl: '%s/d/%s/kubernetes-autoscaling-karpenter-performance' % [this.grafanaUrl, this.karpenterPerformanceDashboardUid],
+      karpenterCostsDashboardUrl: '%s/d/%s/kubernetes-autoscaling-karpenter-costs' % [this.grafanaUrl, this.karpenterCostsDashboardUid],
     },
 
     keda: {
