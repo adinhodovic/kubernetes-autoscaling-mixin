@@ -17,6 +17,7 @@ The mixin provides the following dashboards:
   - Overview
   - Activity
   - Performance
+  - Costs
 - KEDA
   - Scaled Objects
   - Scaled Jobs

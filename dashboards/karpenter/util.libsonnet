@@ -44,6 +44,105 @@ local query = variable.query;
     ||| % this,
   },
 
+  queries(config):: {
+    local filters = $.filters(config),
+
+    activeNodeCounts: |||
+      count by (region, zone, instance_type, capacity_type) (
+        max by (node_name, region, zone, instance_type, capacity_type) (
+          karpenter_nodes_allocatable{
+            %(full)s,
+            resource_type="cpu"
+          }
+        )
+      )
+    ||| % filters,
+
+    activeNodeCountsByNodePool: |||
+      count by (nodepool, region, zone, instance_type, capacity_type) (
+        max by (node_name, nodepool, region, zone, instance_type, capacity_type) (
+          karpenter_nodes_allocatable{
+            %(full)s,
+            resource_type="cpu"
+          }
+        )
+      )
+    ||| % filters,
+
+    activeNodeCountsByArch: |||
+      count by (arch, zone, instance_type, capacity_type) (
+        max by (node_name, arch, zone, instance_type, capacity_type) (
+          karpenter_nodes_allocatable{
+            %(full)s,
+            resource_type="cpu"
+          }
+        )
+      )
+    ||| % filters,
+
+    activeSpotNodeCounts: |||
+      count by (region, zone, instance_type) (
+        max by (node_name, region, zone, instance_type) (
+          karpenter_nodes_allocatable{
+            %(withLocation)s,
+            %(arch)s,
+            %(os)s,
+            %(instanceType)s,
+            resource_type="cpu"
+          }
+        )
+      )
+    ||| % filters,
+
+    activeSpotNodeCountsByNodePool: |||
+      count by (nodepool, region, zone, instance_type) (
+        max by (node_name, nodepool, region, zone, instance_type) (
+          karpenter_nodes_allocatable{
+            %(withLocation)s,
+            %(arch)s,
+            %(os)s,
+            %(instanceType)s,
+            resource_type="cpu"
+          }
+        )
+      )
+    ||| % filters,
+
+    priceEstimate: |||
+      max by (instance_type, capacity_type, zone) (
+        karpenter_cloudprovider_instance_type_offering_price_estimate{
+          %(base)s,
+          %(zone)s,
+          %(instanceType)s,
+          %(capacityType)s
+        }
+      )
+    ||| % filters,
+
+    onDemandPriceEstimate: |||
+      max by (instance_type, zone) (
+        karpenter_cloudprovider_instance_type_offering_price_estimate{
+          %(base)s,
+          %(zone)s,
+          %(instanceType)s,
+          capacity_type="on-demand"
+        }
+      )
+    ||| % filters,
+
+    spotPriceEstimate: |||
+      max by (instance_type, zone) (
+        karpenter_cloudprovider_instance_type_offering_price_estimate{
+          %(base)s,
+          %(zone)s,
+          %(instanceType)s,
+          capacity_type="spot"
+        }
+      )
+    ||| % filters,
+
+  },
+
   variables(config):: {
     local this = self,
 
