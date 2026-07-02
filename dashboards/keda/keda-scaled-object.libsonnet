@@ -221,7 +221,7 @@ local tbStandardOptions = tablePanel.standardOptions;
               links=[
                 tbPanelOptions.link.withTitle('Go to HPA') +
                 tbPanelOptions.link.withUrl(
-                  '/d/%s/kubernetes-autoscaling-horizontal-pod-autoscaler?var-cluster=${__data.fields.cluster}&var-namespace=${__data.fields.namespace}&var-hpa=keda-hpa-${__data.fields.scaledObject}&var-metric_name=${__data.fields.metric}' % $._config.hpaDashboardUid
+                  '/d/%s/kubernetes-autoscaling-horizontal-pod-autoscaler?var-cluster=${__data.fields.cluster}&var-namespace=${__data.fields.exported_namespace}&var-hpa=keda-hpa-${__data.fields.scaledObject}&var-metric_name=${__data.fields.metric}' % $._config.hpaDashboardUid
                 ) +
                 tbPanelOptions.link.withTargetBlank(true),
               ],
