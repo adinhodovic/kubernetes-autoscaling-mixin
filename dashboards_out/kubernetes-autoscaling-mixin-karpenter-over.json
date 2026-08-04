@@ -1736,10 +1736,10 @@
                "type": "prometheus",
                "uid": "${datasource}"
             },
-            "hide": 2,
+            "hide": 0,
             "label": "Cluster",
             "name": "cluster",
-            "query": "label_values(kube_pod_info{job=~\"kube-state-metrics\"}, cluster)",
+            "query": "label_values(karpenter_nodes_allocatable, cluster)",
             "refresh": 2,
             "sort": 1,
             "type": "query"
