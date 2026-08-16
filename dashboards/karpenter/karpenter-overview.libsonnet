@@ -831,7 +831,7 @@ local tbFieldConfig = tablePanel.fieldConfig;
                     tbStandardOptions.threshold.step.withValue(66) +
                     tbStandardOptions.threshold.step.withColor('red'),
                   ]) +
-                  tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withType()
+                  tbFieldConfig.defaults.custom.cellOptions.TableCellOptions.TableBarGaugeCellOptions.withType()
                 ),
                 tbOverride.byName.new('Memory Utilization') +
                 tbOverride.byName.withPropertiesFromOptions(
@@ -847,7 +847,7 @@ local tbFieldConfig = tablePanel.fieldConfig;
                     tbStandardOptions.threshold.step.withValue(66) +
                     tbStandardOptions.threshold.step.withColor('red'),
                   ]) +
-                  tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withType()
+                  tbFieldConfig.defaults.custom.cellOptions.TableCellOptions.TableBarGaugeCellOptions.withType()
                 ),
                 tbOverride.byName.new('Instance Memory') +
                 tbOverride.byName.withPropertiesFromOptions(
