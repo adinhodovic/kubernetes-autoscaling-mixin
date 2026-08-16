@@ -205,7 +205,7 @@ local tbFieldConfig = tablePanel.fieldConfig;
                   ) +
                   tbStandardOptions.color.withMode('fixed') +
                   tbStandardOptions.color.withFixedColor('dark-red') +
-                  tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withMode('basic')
+                  tbFieldConfig.defaults.custom.cellOptions.TableCellOptions.TableBarGaugeCellOptions.withMode('basic')
                 ),
                 tbOverride.byName.new('Target') +
                 tbOverride.byName.withPropertiesFromOptions(
@@ -214,7 +214,7 @@ local tbFieldConfig = tablePanel.fieldConfig;
                   ) +
                   tbStandardOptions.color.withMode('fixed') +
                   tbStandardOptions.color.withFixedColor('yellow') +
-                  tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withMode('basic')
+                  tbFieldConfig.defaults.custom.cellOptions.TableCellOptions.TableBarGaugeCellOptions.withMode('basic')
                 ),
                 tbOverride.byName.new('Upper Bound') +
                 tbOverride.byName.withPropertiesFromOptions(
@@ -223,7 +223,7 @@ local tbFieldConfig = tablePanel.fieldConfig;
                   ) +
                   tbStandardOptions.color.withMode('fixed') +
                   tbStandardOptions.color.withFixedColor('green') +
-                  tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withMode('basic')
+                  tbFieldConfig.defaults.custom.cellOptions.TableCellOptions.TableBarGaugeCellOptions.withMode('basic')
                 ),
               ],
             ),
@@ -294,7 +294,7 @@ local tbFieldConfig = tablePanel.fieldConfig;
                   ) +
                   tbStandardOptions.color.withMode('fixed') +
                   tbStandardOptions.color.withFixedColor('dark-red') +
-                  tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withMode('basic')
+                  tbFieldConfig.defaults.custom.cellOptions.TableCellOptions.TableBarGaugeCellOptions.withMode('basic')
                 ),
                 tbOverride.byName.new('Target') +
                 tbOverride.byName.withPropertiesFromOptions(
@@ -303,7 +303,7 @@ local tbFieldConfig = tablePanel.fieldConfig;
                   ) +
                   tbStandardOptions.color.withMode('fixed') +
                   tbStandardOptions.color.withFixedColor('yellow') +
-                  tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withMode('basic')
+                  tbFieldConfig.defaults.custom.cellOptions.TableCellOptions.TableBarGaugeCellOptions.withMode('basic')
                 ),
                 tbOverride.byName.new('Upper Bound') +
                 tbOverride.byName.withPropertiesFromOptions(
@@ -312,7 +312,7 @@ local tbFieldConfig = tablePanel.fieldConfig;
                   ) +
                   tbStandardOptions.color.withMode('fixed') +
                   tbStandardOptions.color.withFixedColor('green') +
-                  tbFieldConfig.defaults.custom.cellOptions.TableBarGaugeCellOptions.withMode('basic')
+                  tbFieldConfig.defaults.custom.cellOptions.TableCellOptions.TableBarGaugeCellOptions.withMode('basic')
                 ),
               ],
             ),
