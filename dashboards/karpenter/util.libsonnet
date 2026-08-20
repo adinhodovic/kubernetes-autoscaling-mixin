@@ -167,19 +167,19 @@ local query = variable.query;
       query.withDatasourceFromVariable(this.datasource) +
       query.queryTypes.withLabelValues(
         config.clusterLabel,
-        'kube_pod_info{%(kubeStateMetricsSelector)s}' % config,
+        'karpenter_nodes_allocatable',
       ) +
       query.generalOptions.withLabel('Cluster') +
       query.refresh.onLoad() +
       query.refresh.onTime() +
       query.withSort() +
+      query.generalOptions.showOnDashboard.withLabelAndValue() +
       (
         if config.showMultiCluster
         then
-          query.generalOptions.showOnDashboard.withLabelAndValue() +
           query.selectionOptions.withMulti(value=config.multiClusterAllowsMultipleSelection) +
           query.selectionOptions.withIncludeAll(value=config.multiClusterIncludeAllValue)
-        else query.generalOptions.showOnDashboard.withNothing()
+        else {}
       ),
 
     job:
