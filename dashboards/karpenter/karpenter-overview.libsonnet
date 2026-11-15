@@ -62,24 +62,12 @@ local tbFieldConfig = tablePanel.fieldConfig;
                 %(full)s,
                 resource_type="cpu"
               }
-            ) +
-            sum(
-              karpenter_nodes_total_daemon_requests{
-                %(full)s,
-                resource_type="cpu"
-              }
             )
           ||| % defaultFilters,
 
           podMemoryRequests: |||
             sum(
               karpenter_nodes_total_pod_requests{
-                %(full)s,
-                resource_type="memory"
-              }
-            ) +
-            sum(
-              karpenter_nodes_total_daemon_requests{
                 %(full)s,
                 resource_type="memory"
               }
@@ -235,24 +223,12 @@ local tbFieldConfig = tablePanel.fieldConfig;
                 %(full)s,
                 resource_type="cpu"
               }
-            ) +
-            sum(
-              karpenter_nodes_total_daemon_limits{
-                %(full)s,
-                resource_type="cpu"
-              }
             )
           ||| % defaultFilters,
 
           podMemoryLimits: |||
             sum(
               karpenter_nodes_total_pod_limits{
-                %(full)s,
-                resource_type="memory"
-              }
-            ) +
-            sum(
-              karpenter_nodes_total_daemon_limits{
                 %(full)s,
                 resource_type="memory"
               }
@@ -399,21 +375,13 @@ local tbFieldConfig = tablePanel.fieldConfig;
           // Node Table
           nodeCpuUtilization: |||
             (
-              (
-                sum(
-                  karpenter_nodes_total_pod_requests{
-                    %(full)s,
-                    resource_type="cpu"
-                  }
-                ) by (node_name, nodepool, instance_type, instance_memory, instance_cpu, instance_network_bandwidth, region, zone, os, capacity_type, arch)
-                +
-                sum(
-                  karpenter_nodes_total_daemon_requests{
-                    %(full)s,
-                    resource_type="cpu"
-                  }
-                ) by (node_name, nodepool, instance_type, instance_memory, instance_cpu, instance_network_bandwidth, region, zone, os, capacity_type, arch)
-              ) /
+              sum(
+                karpenter_nodes_total_pod_requests{
+                  %(full)s,
+                  resource_type="cpu"
+                }
+              ) by (node_name, nodepool, instance_type, instance_memory, instance_cpu, instance_network_bandwidth, region, zone, os, capacity_type, arch)
+              /
               sum(
                 karpenter_nodes_allocatable{
                   %(full)s,
@@ -425,21 +393,13 @@ local tbFieldConfig = tablePanel.fieldConfig;
 
           nodeMemoryUtilization: |||
             (
-              (
-                sum(
-                  karpenter_nodes_total_pod_requests{
-                    %(full)s,
-                    resource_type="memory"
-                  }
-                ) by (node_name, nodepool, instance_type, instance_memory, instance_cpu, instance_network_bandwidth, region, zone, os, capacity_type, arch)
-                +
-                sum(
-                  karpenter_nodes_total_daemon_requests{
-                    %(full)s,
-                    resource_type="memory"
-                  }
-                ) by (node_name, nodepool, instance_type, instance_memory, instance_cpu, instance_network_bandwidth, region, zone, os, capacity_type, arch)
-              ) /
+              sum(
+                karpenter_nodes_total_pod_requests{
+                  %(full)s,
+                  resource_type="memory"
+                }
+              ) by (node_name, nodepool, instance_type, instance_memory, instance_cpu, instance_network_bandwidth, region, zone, os, capacity_type, arch)
+              /
               sum(
                 karpenter_nodes_allocatable{
                   %(full)s,
