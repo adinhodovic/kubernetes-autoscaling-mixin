@@ -171,7 +171,7 @@ local stStandardOptions = stat.standardOptions;
           // Work Queue
           workQueueDepth: |||
             sum(
-              karpenter_workqueue_depth{
+              workqueue_depth{
                 %(base)s
               }
             ) by (job)
@@ -181,7 +181,7 @@ local stStandardOptions = stat.standardOptions;
             histogram_quantile(0.50,
               sum(
                 irate(
-                  karpenter_workqueue_queue_duration_seconds_bucket{
+                  workqueue_queue_duration_seconds_bucket{
                     %(base)s
                   }[$__rate_interval]
                 ) > 0
@@ -193,7 +193,7 @@ local stStandardOptions = stat.standardOptions;
             histogram_quantile(0.95,
               sum(
                 irate(
-                  karpenter_workqueue_queue_duration_seconds_bucket{
+                  workqueue_queue_duration_seconds_bucket{
                     %(base)s
                   }[$__rate_interval]
                 ) > 0
@@ -205,7 +205,7 @@ local stStandardOptions = stat.standardOptions;
             histogram_quantile(0.99,
               sum(
                 irate(
-                  karpenter_workqueue_queue_duration_seconds_bucket{
+                  workqueue_queue_duration_seconds_bucket{
                     %(base)s
                   }[$__rate_interval]
                 ) > 0
@@ -217,7 +217,7 @@ local stStandardOptions = stat.standardOptions;
             histogram_quantile(0.50,
               sum(
                 irate(
-                  karpenter_workqueue_work_duration_seconds_bucket{
+                  workqueue_work_duration_seconds_bucket{
                     %(base)s
                   }[$__rate_interval]
                 ) > 0
@@ -229,7 +229,7 @@ local stStandardOptions = stat.standardOptions;
             histogram_quantile(0.95,
               sum(
                 irate(
-                  karpenter_workqueue_work_duration_seconds_bucket{
+                  workqueue_work_duration_seconds_bucket{
                     %(base)s
                   }[$__rate_interval]
                 ) > 0
@@ -241,7 +241,7 @@ local stStandardOptions = stat.standardOptions;
             histogram_quantile(0.99,
               sum(
                 irate(
-                  karpenter_workqueue_work_duration_seconds_bucket{
+                  workqueue_work_duration_seconds_bucket{
                     %(base)s
                   }[$__rate_interval]
                 ) > 0
