@@ -44,7 +44,7 @@ local query = variable.query;
         config.clusterLabel,
         'kube_pod_info{%(kubeStateMetricsSelector)s}' % config,
       ) +
-      query.generalOptions.withLabel('Cluster') +
+      query.generalOptions.withLabel(config.clusterVariableLabel) +
       query.refresh.onLoad() +
       query.refresh.onTime() +
       query.withSort() +
