@@ -119,17 +119,7 @@ local stStandardOptions = stat.standardOptions;
             ) by (job)
           ||| % defaultFilters,
 
-          schedulerSchedulingDurationP50: |||
-            histogram_quantile(0.50,
-              sum(
-                rate(
-                  karpenter_scheduler_scheduling_duration_seconds_bucket{
-                    %(base)s
-                  }[$__rate_interval]
-                ) > 0
-              ) by (job, le)
-            )
-          ||| % defaultFilters,
+          schedulerSchedulingDurationP50: util.histogramQuantile('0.50', 'karpenter_scheduler_scheduling_duration_seconds', defaultFilters.base, bucketFilter=' > 0'),
           schedulerSchedulingDurationP95: std.strReplace(queries.schedulerSchedulingDurationP50, '0.50', '0.95'),
           schedulerSchedulingDurationP99: std.strReplace(queries.schedulerSchedulingDurationP50, '0.50', '0.99'),
 
@@ -154,17 +144,7 @@ local stStandardOptions = stat.standardOptions;
             ) by (job)
           ||| % defaultFilters,
 
-          interuptionDurationP50: |||
-            histogram_quantile(0.50,
-              sum(
-                rate(
-                  karpenter_interruption_message_queue_duration_seconds_bucket{
-                    %(base)s
-                  }[$__rate_interval]
-                ) > 0
-              ) by (job, le)
-            )
-          ||| % defaultFilters,
+          interuptionDurationP50: util.histogramQuantile('0.50', 'karpenter_interruption_message_queue_duration_seconds', defaultFilters.base, bucketFilter=' > 0'),
           interuptionDurationP95: std.strReplace(queries.interuptionDurationP50, '0.50', '0.95'),
           interuptionDurationP99: std.strReplace(queries.interuptionDurationP50, '0.50', '0.99'),
 
@@ -177,77 +157,17 @@ local stStandardOptions = stat.standardOptions;
             ) by (job)
           ||| % defaultFilters,
 
-          workQueueInQueueDurationP50: |||
-            histogram_quantile(0.50,
-              sum(
-                irate(
-                  workqueue_queue_duration_seconds_bucket{
-                    %(base)s
-                  }[$__rate_interval]
-                ) > 0
-              ) by (job, le)
-            )
-          ||| % defaultFilters,
+          workQueueInQueueDurationP50: util.histogramQuantile('0.50', 'workqueue_queue_duration_seconds', defaultFilters.base, rateFunction='irate', bucketFilter=' > 0'),
 
-          workQueueInQueueDurationP95: |||
-            histogram_quantile(0.95,
-              sum(
-                irate(
-                  workqueue_queue_duration_seconds_bucket{
-                    %(base)s
-                  }[$__rate_interval]
-                ) > 0
-              ) by (job, le)
-            )
-          ||| % defaultFilters,
+          workQueueInQueueDurationP95: util.histogramQuantile('0.95', 'workqueue_queue_duration_seconds', defaultFilters.base, rateFunction='irate', bucketFilter=' > 0'),
 
-          workQueueInQueueDurationP99: |||
-            histogram_quantile(0.99,
-              sum(
-                irate(
-                  workqueue_queue_duration_seconds_bucket{
-                    %(base)s
-                  }[$__rate_interval]
-                ) > 0
-              ) by (job, le)
-            )
-          ||| % defaultFilters,
+          workQueueInQueueDurationP99: util.histogramQuantile('0.99', 'workqueue_queue_duration_seconds', defaultFilters.base, rateFunction='irate', bucketFilter=' > 0'),
 
-          workQueueWorkDurationP50: |||
-            histogram_quantile(0.50,
-              sum(
-                irate(
-                  workqueue_work_duration_seconds_bucket{
-                    %(base)s
-                  }[$__rate_interval]
-                ) > 0
-              ) by (job, le)
-            )
-          ||| % defaultFilters,
+          workQueueWorkDurationP50: util.histogramQuantile('0.50', 'workqueue_work_duration_seconds', defaultFilters.base, rateFunction='irate', bucketFilter=' > 0'),
 
-          workQueueWorkDurationP95: |||
-            histogram_quantile(0.95,
-              sum(
-                irate(
-                  workqueue_work_duration_seconds_bucket{
-                    %(base)s
-                  }[$__rate_interval]
-                ) > 0
-              ) by (job, le)
-            )
-          ||| % defaultFilters,
+          workQueueWorkDurationP95: util.histogramQuantile('0.95', 'workqueue_work_duration_seconds', defaultFilters.base, rateFunction='irate', bucketFilter=' > 0'),
 
-          workQueueWorkDurationP99: |||
-            histogram_quantile(0.99,
-              sum(
-                irate(
-                  workqueue_work_duration_seconds_bucket{
-                    %(base)s
-                  }[$__rate_interval]
-                ) > 0
-              ) by (job, le)
-            )
-          ||| % defaultFilters,
+          workQueueWorkDurationP99: util.histogramQuantile('0.99', 'workqueue_work_duration_seconds', defaultFilters.base, rateFunction='irate', bucketFilter=' > 0'),
 
           // Controller
           controllerReconcile: |||

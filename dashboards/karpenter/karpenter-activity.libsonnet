@@ -76,17 +76,7 @@ local grid = g.util.grid;
             )
           ||| % defaultFilters,
 
-          nodeClaimsTerminationP50Duration: |||
-            histogram_quantile(0.50,
-              sum(
-                rate(
-                  karpenter_nodeclaims_termination_duration_seconds_bucket{
-                    %(base)s
-                  }[$__rate_interval]
-                )
-              ) by (job, le)
-            )
-          ||| % defaultFilters,
+          nodeClaimsTerminationP50Duration: util.histogramQuantile('0.50', 'karpenter_nodeclaims_termination_duration_seconds', defaultFilters.base),
           nodeClaimsTerminationP95Duration: std.strReplace(queries.nodeClaimsTerminationP50Duration, '0.50', '0.95'),
           nodeClaimsTerminationP99Duration: std.strReplace(queries.nodeClaimsTerminationP50Duration, '0.50', '0.99'),
 
@@ -124,17 +114,7 @@ local grid = g.util.grid;
             )
           ||| % defaultFilters,
 
-          nodesVoluntaryDisruptionEvaluationP50Duration: |||
-            histogram_quantile(0.50,
-              sum(
-                rate(
-                  karpenter_voluntary_disruption_decision_evaluation_duration_seconds_bucket{
-                    %(base)s
-                  }[$__rate_interval]
-                )
-              ) by (job, le)
-            )
-          ||| % defaultFilters,
+          nodesVoluntaryDisruptionEvaluationP50Duration: util.histogramQuantile('0.50', 'karpenter_voluntary_disruption_decision_evaluation_duration_seconds', defaultFilters.base),
           nodesVoluntaryDisruptionEvaluationP95Duration: std.strReplace(queries.nodesVoluntaryDisruptionEvaluationP50Duration, '0.50', '0.95'),
           nodesVoluntaryDisruptionEvaluationP99Duration: std.strReplace(queries.nodesVoluntaryDisruptionEvaluationP50Duration, '0.50', '0.99'),
 

@@ -7,6 +7,40 @@ local datasource = variable.datasource;
 local query = variable.query;
 
 {
+  // histogram_quantile over a histogram scraped as native histograms or as classic _bucket
+  // series. A group with native samples ignores its classic buckets, as histogram_quantile
+  // returns nothing for a group that has both.
+  histogramQuantile(quantile, metric, selector, rateFunction='rate', bucketFilter='')::
+    local rate(name) = |||
+      %(rateFunction)s(
+        %(name)s{
+          %(selector)s
+        }[$__rate_interval]
+      )
+    ||| % { rateFunction: rateFunction, name: name, selector: selector };
+    |||
+      histogram_quantile(%(quantile)s,
+        sum(
+          %(native)s
+        ) by (job)
+        or
+        (
+          sum(
+            %(classic)s%(bucketFilter)s
+          ) by (job, le)
+          unless on (job)
+          sum(
+            %(native)s
+          ) by (job)
+        )
+      )
+    ||| % {
+      quantile: quantile,
+      native: rate(metric),
+      classic: rate(metric + '_bucket'),
+      bucketFilter: bucketFilter,
+    },
+
   filters(config):: {
     local this = self,
     cluster: '%(clusterLabel)s="$cluster"' % config,
