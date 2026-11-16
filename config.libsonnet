@@ -13,6 +13,8 @@
     // Opt-in to multiCluster dashboards by overriding this and the clusterLabel.
     showMultiCluster: false,
     clusterLabel: 'cluster',
+    // Display name of the cluster variable
+    clusterVariableLabel: 'Cluster',
     // Allow selecting multiple cluster values
     multiClusterAllowsMultipleSelection: false,
     // Include the 'all' value in cluster selector
