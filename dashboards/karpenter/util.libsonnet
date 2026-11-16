@@ -167,7 +167,7 @@ local query = variable.query;
       query.withDatasourceFromVariable(this.datasource) +
       query.queryTypes.withLabelValues(
         config.clusterLabel,
-        'kube_pod_info{%(kubeStateMetricsSelector)s}' % config,
+        'karpenter_build_info',
       ) +
       query.generalOptions.withLabel(config.clusterVariableLabel) +
       query.refresh.onLoad() +
@@ -185,7 +185,7 @@ local query = variable.query;
     job:
       query.new(
         'job',
-        'label_values(karpenter_nodes_allocatable{%(cluster)s}, job)' % defaultFilters,
+        'label_values(karpenter_build_info{%(cluster)s}, job)' % defaultFilters,
       ) +
       query.withDatasourceFromVariable(this.datasource) +
       query.withSort(1) +
